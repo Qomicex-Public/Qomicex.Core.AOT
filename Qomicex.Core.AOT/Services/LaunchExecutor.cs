@@ -32,6 +32,12 @@ namespace Qomicex.Core.AOT.Services
             string paramsStr = SelectParams(launchOptions);
 
             //return new LaunchResult();
+            return null;//Temp
+        }
+
+        public Task<bool> KillAsync(int processId)
+        {
+            throw new NotImplementedException();
         }
 
         private string SelectParams(LaunchOptions options)

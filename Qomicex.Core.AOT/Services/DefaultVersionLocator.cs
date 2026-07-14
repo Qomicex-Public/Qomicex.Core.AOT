@@ -12,6 +12,7 @@ internal class DefaultVersionLocator : IVersionLocator
     private readonly Dictionary<string, CompleteVersionMetadata> _metadataCache = new();
     private readonly VersionMetadataJsonContext _metadataCtx = VersionMetadataJsonContext.Default;
     private bool _isCacheDirty = true;
+    private bool _isRefreshing;
 
     public DefaultVersionLocator(string gameRootPath)
     {
@@ -64,9 +65,6 @@ internal class DefaultVersionLocator : IVersionLocator
 
     public void RefreshCache()
     {
-        _isCacheDirty = true;
-        _versionCache.Clear();
-        _metadataCache.Clear();
         EnsureCacheFresh();
     }
 
@@ -77,51 +75,55 @@ internal class DefaultVersionLocator : IVersionLocator
 
     private void EnsureCacheFresh()
     {
-        if (!_isCacheDirty)
+        if (!_isCacheDirty || _isRefreshing)
             return;
 
-        _versionCache.Clear();
-        _metadataCache.Clear();
-
-        if (!Directory.Exists(_versionsRootPath))
+        _isRefreshing = true;
+        try
         {
-            _isCacheDirty = false;
-            return;
-        }
+            _versionCache.Clear();
+            _metadataCache.Clear();
 
-        foreach (var versionDir in Directory.GetDirectories(_versionsRootPath))
-        {
-            var versionId = Path.GetFileName(versionDir);
-            var jsonPath = Path.Combine(versionDir, $"{versionId}.json");
+            if (!Directory.Exists(_versionsRootPath))
+                return;
 
-            if (!File.Exists(jsonPath))
-                continue;
-
-            try
+            foreach (var versionDir in Directory.GetDirectories(_versionsRootPath))
             {
-                var metadata = GetVersionMetadata(versionId);
-                if (metadata == null)
+                var versionId = Path.GetFileName(versionDir);
+                var jsonPath = Path.Combine(versionDir, $"{versionId}.json");
+
+                if (!File.Exists(jsonPath))
                     continue;
 
-                var isComplete = IsVersionComplete(versionId, metadata);
-                var totalSize = CalculateVersionSize(versionDir);
+                try
+                {
+                    var metadata = GetVersionMetadata(versionId);
+                    if (metadata == null)
+                        continue;
 
-                _versionCache[versionId] = new LocalVersionInfo(
-                    Id: versionId,
-                    Type: metadata.Type,
-                    ReleaseTime: metadata.ReleaseTime,
-                    IsComplete: isComplete,
-                    VersionPath: versionDir,
-                    TotalSize: totalSize
-                );
-            }
-            catch
-            {
-                // ponytail: skip unparseable version dirs
+                    var isComplete = IsVersionComplete(versionId, metadata);
+                    var totalSize = CalculateVersionSize(versionDir);
+
+                    _versionCache[versionId] = new LocalVersionInfo(
+                        Id: versionId,
+                        Type: metadata.Type,
+                        ReleaseTime: metadata.ReleaseTime,
+                        IsComplete: isComplete,
+                        VersionPath: versionDir,
+                        TotalSize: totalSize
+                    );
+                }
+                catch
+                {
+                    // ponytail: skip unparseable version dirs
+                }
             }
         }
-
-        _isCacheDirty = false;
+        finally
+        {
+            _isCacheDirty = false;
+            _isRefreshing = false;
+        }
     }
 
     private bool IsVersionComplete(string versionId, CompleteVersionMetadata metadata)
