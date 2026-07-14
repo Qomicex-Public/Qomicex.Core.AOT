@@ -47,6 +47,7 @@ namespace Qomicex.Core.AOT.Builder
         public string? Token { get; set; }
         public string? AccessToken { get; set; }
         public string? RefreshToken { get; set; }
+        public string? AuthlibInjectorParam {  get; set; }
     }
 
     public sealed record class JavaOptions
@@ -59,8 +60,8 @@ namespace Qomicex.Core.AOT.Builder
 
     public sealed record class LaunchOptions
     {
-        public string? Version { get; set; }
-        public bool? VersionIsolation {  get; set; }
+        public string Version { get; set; } = string.Empty;
+        public bool VersionIsolation {  get; set; }
         public string? JoinServer { get; set; }
         public string? JoinWorld { get; set; }
         public JavaOptions? JavaOptions { get; set; }

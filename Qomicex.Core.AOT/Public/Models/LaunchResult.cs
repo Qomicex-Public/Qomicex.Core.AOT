@@ -6,4 +6,8 @@ public sealed class LaunchResult
     public int ProcessId { get; init; }
     public string? Message { get; init; }
     public Exception? Exception { get; init; }
+
+    public Action<string>? OnOutput = null;
+    public Action<string>? OnError = null;
+    public Action<int>? OnExit = null;
 }

@@ -1,6 +1,7 @@
 ﻿using Qomicex.Core.AOT.Models.VersionMetadata;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Qomicex.Core.AOT.Utils
@@ -28,5 +29,15 @@ namespace Qomicex.Core.AOT.Utils
 
         public static string GetCurrentArch() =>
             Environment.Is64BitOperatingSystem ? "64" : "32";
+
+        public static string GetSeparator()
+        {
+            return OperatingSystem.IsWindows() ? ";" : ":";
+        }
+
+        public static string GetArch()
+        {
+            return RuntimeInformation.OSArchitecture.ToString().ToLower();
+        }
     }
 }
