@@ -3,12 +3,17 @@ using Qomicex.Core.AOT.Exceptions;
 using Qomicex.Core.AOT.Interfaces;
 using Qomicex.Core.AOT.JsonContext;
 using Qomicex.Core.AOT.Models.ParamsMeta;
+using Qomicex.Core.AOT.Models.VersionMetadata;
 using Qomicex.Core.AOT.Public.Models;
 using Qomicex.Core.AOT.Utils;
+using Qomicex.Core.AOT.Servicesl;
 using System;
 using System.Collections.Generic;
+using System.Net.Http.Json;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Qomicex.Core.AOT.Services
 {
@@ -24,6 +29,7 @@ namespace Qomicex.Core.AOT.Services
 
         public Task<LaunchResult> LaunchAsync(LaunchOptions launchOptions)
         {
+            string paramsStr = SelectParams(launchOptions);
 
             //return new LaunchResult();
         }
@@ -31,9 +37,106 @@ namespace Qomicex.Core.AOT.Services
         private string SelectParams(LaunchOptions options)
         {
             List<string> paramList = new List<string>();
+            Config? config = ParseGameJson(options);
 
+            //拼接JVM
             paramList.AddRange(GetJVMParams(options));
 
+            //拼接mainClass
+            paramList.Add(GetMainClass(options));
+
+            //拼接Game参数
+            paramList.AddRange(GetGameParams(options));
+
+            //处理参数
+            // 获取 assetIndex
+            string assetsIndex = config!.AssetIndex;
+            if(string.IsNullOrEmpty(assetsIndex))
+            {
+                if (config!.InheritsFrom is null)
+                    throw new ParamsException("获取AssetIndex错误");
+                var inheritsFromConfig = ParseGameJson(options with { Version = config!.InheritsFrom });
+                assetsIndex = inheritsFromConfig!.AssetIndex;
+            }
+            //处理账户
+            string loginMode = "Legacy";
+            if (options.AuthOptions.Mode != AuthMode.Offline)
+                loginMode = "Microsoft";
+            if (loginMode == "Legacy")
+            {
+                var auth = options.AuthOptions with { Uuid = NameToUuid(options.AuthOptions.Name) };
+                options = options with { AuthOptions = auth };
+            }
+            //处理ClassPath
+            
+
+            return "";
+        }
+
+        private List<Library> GetClassPath(LaunchOptions options)
+        {
+            List<Library> LibList = new List<Library>();
+
+            var locator = new DefaultVersionLocator(_gameDir);
+            var meta = locator.GetVersionMetadata(options.Version);
+
+            foreach(var lib in meta.Libraries)
+            {
+                if (lib.Rules is { Count: > 0 })
+                {
+                    foreach (var rule in lib.Rules)
+                    {
+                        if (LibHelper.IsRuleSuitable(rule))
+                        {
+
+                        }
+                    }
+                }
+                else
+                {
+                    LibList.Add(lib);
+                }
+            }
+
+            return LibList;
+        }
+        public static string NameToUuid(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return string.Empty;
+            using (MD5 md5 = MD5.Create())
+            {
+                string input = $"OfflinePlayer:{name}";
+                byte[] hashBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(input));
+                string md5Str = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+
+                string bit6 = ((Convert.ToByte(md5Str.Substring(12, 2), 16) & 15) | 48).ToString("x2");
+                string bit8 = ((Convert.ToByte(md5Str.Substring(16, 2), 16) & 63) | 128).ToString("x2");
+
+                string uuid = md5Str.Substring(0, 12) + bit6 + md5Str.Substring(14, 2) + bit8 + md5Str.Substring(18);
+
+                return uuid;
+            }
+        }
+
+        private string GetMainClass(LaunchOptions options)
+        {
+            var locator = new DefaultVersionLocator(_gameDir);
+            var meta = locator.GetVersionMetadata(options.Version);
+
+            string mainClass = meta?.MainClass;
+            if (string.IsNullOrEmpty(mainClass))
+            {
+                if (!string.IsNullOrEmpty(meta!.InheritsFrom))
+                    mainClass = GetMainClass(options with { Version = meta!.InheritsFrom });
+                else
+                    throw new ParamsException("MainClass键不存在");
+            }
+            return mainClass;
+        }
+
+        private Config ParseGameJson(LaunchOptions options)
+        {
             string json = File.ReadAllText(Path.Combine(_gameDir, "versions", options.Version, $"{options.Version}.json"));
 
             var jsonOptions = new JsonSerializerOptions
@@ -43,19 +146,13 @@ namespace Qomicex.Core.AOT.Services
             };
 
             Config? config = JsonSerializer.Deserialize<Config>(json, jsonOptions);
+
             if (config is null)
             {
                 throw new ParamsException("版本Json解析失败");
             }
 
-            paramList.Add(config!.MainClass);
-
-            paramList.AddRange(GetGameParams(options));
-
-            //处理参数
-
-
-            return "";
+            return config;
         }
 
         private List<string> GetJVMParams(LaunchOptions options)
@@ -80,6 +177,7 @@ namespace Qomicex.Core.AOT.Services
             };
 
             Config? config = JsonSerializer.Deserialize<Config>(json, jsonOptions);
+
             if (config is null)
             {
                 throw new ParamsException("版本Json解析失败");
@@ -94,6 +192,25 @@ namespace Qomicex.Core.AOT.Services
                 jvmList.Add("-Dfml.ignoreInvalidMinecraftCertificates=True");
                 jvmList.Add("-Dfml.ignorePatchDiscrepancies=True");
                 jvmList.Add("-Dlog4j2.formatMsgNoLookups=true");
+
+                if (options.JavaOptions.ExtraJvmArgs is not null)
+                {
+                    jvmList.AddRange(options.JavaOptions.ExtraJvmArgs);
+                }
+
+                // Windows适配
+                if (OperatingSystem.IsWindows())
+                {
+                    System.Version os_ver = Environment.OSVersion.Version;
+                    if (os_ver.Major >= 10)
+                    {
+                        jvmList.Add("-Dos.name=\"Windows 10\"");
+                        jvmList.Add("-Dos.version=\"10.0\"");
+                    }
+                }
+
+                jvmList.Add($"-Dminecraft.launcher.brand=\"{_launchName}\"");
+                jvmList.Add("-Dminecraft.launcher.version=23");
             }
 
             //处理InheritsFrom
@@ -105,6 +222,9 @@ namespace Qomicex.Core.AOT.Services
             }
 
             //处理当前json的jvm
+            if (config!.Arguments?.Jvm is null)
+                return jvmList;//旧版兼容
+
             foreach (var element in config!.Arguments.Jvm)
             {
                 if (element.ValueKind == JsonValueKind.Object)
@@ -116,35 +236,10 @@ namespace Qomicex.Core.AOT.Services
                     {
                         foreach (var rule in entry.Rules)
                         {
-                            if (rule.Action == "allow")
+                            if (LibHelper.IsRuleSuitable(rule))
                             {
-                                if (rule.Os is not null && rule.Os.Name is not null)
-                                {
-                                    if (SystemHelper.IsOsMatch(rule.Os))
-                                    {
-                                        shouldAdd = true;
-                                        break;
-                                    }
-                                }
-                                else
-                                {
-                                    shouldAdd = true;
-                                    break;
-                                }
-                            }
-                            else if (rule.Action == "disallow")
-                            {
-                                if (rule.Os is not null && rule.Os.Name is not null)
-                                {
-                                    if (SystemHelper.IsOsMatch(rule.Os))
-                                    {
-                                        break;
-                                    }
-                                }
-                                else
-                                {
-                                    break;
-                                }
+                                shouldAdd = true;
+                                break;
                             }
                         }
                     }
@@ -152,15 +247,24 @@ namespace Qomicex.Core.AOT.Services
                     if(shouldAdd)
                     {
                         if (entry?.Value.ValueKind == JsonValueKind.String)
-                            jvmList.Add(NormalizeArg(entry.Value.GetString()));
+                        {
+                            if(!entry.Value.GetString().Contains("-Dos.version=") && !entry.Value.GetString().Contains("-Dos.name="))
+                            {
+                                jvmList.Add(NormalizeArg(entry.Value.GetString()));
+                            }
+                        }
                         else if (entry?.Value.ValueKind == JsonValueKind.Array)
                             foreach (var v in entry.Value.EnumerateArray())
-                                jvmList.Add(NormalizeArg(v.GetString()));
+                                if (!v.GetString().Contains("-Dos.version=") && !v.GetString().Contains("-Dos.name="))
+                                {
+                                    jvmList.Add(NormalizeArg(v.GetString()));
+                                }
                     }
                 }
                 else if (element.ValueKind == JsonValueKind.String)
                 {
-                    jvmList.Add(NormalizeArg(element.GetString()));
+                    if (!element.GetString().Contains("-Dos.version=") && !element.GetString().Contains("-Dos.name="))
+                        jvmList.Add(NormalizeArg(element.GetString()));
                 }
             }
             return jvmList;
@@ -183,6 +287,7 @@ namespace Qomicex.Core.AOT.Services
             };
 
             Config? config = JsonSerializer.Deserialize<Config>(json, jsonOptions);
+
             if (config is null)
             {
                 throw new ParamsException("版本Json解析失败");
@@ -194,6 +299,11 @@ namespace Qomicex.Core.AOT.Services
                 var inheritsFromOptions = options with { Version = config.InheritsFrom };
 
                 gameList.AddRange(GetJVMParams(inheritsFromOptions, false));
+            }
+            if (config!.Arguments is null)
+            {
+                gameList.AddRange(config!.MinecraftArguments.Split(' '));
+                return gameList;
             }
 
             //处理当前json的game

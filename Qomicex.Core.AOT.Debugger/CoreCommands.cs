@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Qomicex.Core.AOT.Builder;
 using Qomicex.Core.AOT.Core;
 using Qomicex.Core.AOT.Models.Download;
 
@@ -36,7 +37,7 @@ internal static class CoreCommands
         try
         {
             _core?.Dispose();
-            _core = new DefaultGameCore(gameRoot);
+            _core = new GameCoreBuilder().UseGameRoot(gameRoot).Build();
             Trace.TraceInformation($"Core 已初始化, 游戏根目录: {gameRoot}");
         }
         catch (Exception ex)
