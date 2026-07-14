@@ -4,6 +4,7 @@ using Qomicex.Core.AOT.Interfaces.Core;
 using Qomicex.Core.AOT.JsonContext;
 using Qomicex.Core.AOT.Models.Download;
 using Qomicex.Core.AOT.Models.VersionMetadata;
+using Qomicex.Core.AOT.Utils;
 
 namespace Qomicex.Core.AOT.Services;
 
@@ -69,7 +70,7 @@ internal class DefaultResourceCompleter : IResourceCompleter
                 var localPath = Path.Combine(_gameRootPath, "libraries", artifact.Path);
                 if (!File.Exists(localPath))
                     return false;
-                if (!ValidateFileHash(localPath, artifact.Sha1))
+                if (!FileHelper.ValidateFileHash(localPath, artifact.Sha1))
                     return false;
             }
         }
@@ -84,7 +85,7 @@ internal class DefaultResourceCompleter : IResourceCompleter
         if (!string.IsNullOrEmpty(directory))
             Directory.CreateDirectory(directory);
 
-        if (File.Exists(localPath) && ValidateFileHash(localPath, artifact.Sha1))
+        if (File.Exists(localPath) && FileHelper.ValidateFileHash(localPath, artifact.Sha1))
             return;
 
         var mirrorUrls = _sourceManager.GenerateMirrorUrls(artifact.Url, Models.ResourceType.Library);
@@ -152,7 +153,7 @@ internal class DefaultResourceCompleter : IResourceCompleter
                     }
                 }
 
-                if (!string.IsNullOrEmpty(expectedSha1) && !ValidateFileHash(localPath, expectedSha1))
+                if (!string.IsNullOrEmpty(expectedSha1) && !FileHelper.ValidateFileHash(localPath, expectedSha1))
                 {
                     File.Delete(localPath);
                     throw new Exception($"文件哈希不匹配: {Path.GetFileName(localPath)}");
@@ -190,7 +191,7 @@ internal class DefaultResourceCompleter : IResourceCompleter
         if (!string.IsNullOrEmpty(directory))
             Directory.CreateDirectory(directory);
 
-        if (File.Exists(localPath) && ValidateFileHash(localPath, assetIndex.Sha1))
+        if (File.Exists(localPath) && FileHelper.ValidateFileHash(localPath, assetIndex.Sha1))
             return;
 
         var mirrorUrls = _sourceManager.GenerateMirrorUrls(assetIndex.Url, Models.ResourceType.AssetIndex);
@@ -223,7 +224,7 @@ internal class DefaultResourceCompleter : IResourceCompleter
             var assetPath = Path.Combine(hash[..2], hash);
             var localAssetPath = Path.Combine(_gameRootPath, "assets", "objects", assetPath);
 
-            if (!File.Exists(localAssetPath) || !ValidateFileHash(localAssetPath, hash))
+            if (!File.Exists(localAssetPath) || !FileHelper.ValidateFileHash(localAssetPath, hash))
             {
                 var url = $"https://resources.download.minecraft.net/{assetPath}";
                 foreach (var mirrorUrl in _sourceManager.GenerateMirrorUrls(url, Models.ResourceType.Asset))
@@ -263,10 +264,10 @@ internal class DefaultResourceCompleter : IResourceCompleter
 
         if (library.Natives != null && library.Downloads.Classifiers != null)
         {
-            var osName = GetCurrentOsName();
+            var osName = SystemHelper.GetCurrentOsName();
             if (library.Natives.TryGetValue(osName, out var nativeClassifier))
             {
-                var classifierKey = nativeClassifier.Replace("${arch}", GetCurrentArch());
+                var classifierKey = nativeClassifier.Replace("${arch}", SystemHelper.GetCurrentArch());
                 if (library.Downloads.Classifiers.TryGetValue(classifierKey, out var nativeArtifact))
                     artifacts.Add(nativeArtifact);
             }
@@ -282,50 +283,15 @@ internal class DefaultResourceCompleter : IResourceCompleter
         {
             if (rule.Action == "allow")
             {
-                if (rule.Os == null || IsOsMatch(rule.Os))
+                if (rule.Os == null || SystemHelper.IsOsMatch(rule.Os))
                     allow = true;
             }
             else if (rule.Action == "disallow")
             {
-                if (rule.Os == null || IsOsMatch(rule.Os))
+                if (rule.Os == null || SystemHelper.IsOsMatch(rule.Os))
                     allow = false;
             }
         }
         return allow;
     }
-
-    private static bool IsOsMatch(OsRequirement os)
-    {
-        if (os.Name != GetCurrentOsName())
-            return false;
-
-        if (!string.IsNullOrEmpty(os.Version) && !Environment.OSVersion.VersionString.Contains(os.Version))
-            return false;
-
-        if (!string.IsNullOrEmpty(os.Arch) && os.Arch != GetCurrentArch())
-            return false;
-
-        return true;
-    }
-
-    private static string GetCurrentOsName() =>
-        OperatingSystem.IsWindows() ? "windows" :
-        OperatingSystem.IsLinux() ? "linux" :
-        OperatingSystem.IsMacOS() ? "osx" : "unknown";
-
-    private static string GetCurrentArch() =>
-        Environment.Is64BitOperatingSystem ? "64" : "32";
-
-    private static bool ValidateFileHash(string filePath, string expectedHash)
-    {
-        if (!File.Exists(filePath) || string.IsNullOrEmpty(expectedHash))
-            return false;
-
-        using var sha1 = SHA1.Create();
-        using var stream = File.OpenRead(filePath);
-        var hash = sha1.ComputeHash(stream);
-        var actualHash = Convert.ToHexString(hash).ToLower();
-        return string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase);
-    }
-
 }

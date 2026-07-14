@@ -1,25 +1,45 @@
 ﻿using Qomicex.Core.AOT.Core;
+using Qomicex.Core.AOT.Interfaces;
+using Qomicex.Core.AOT.Interfaces.Core;
+using Qomicex.Core.AOT.Interfaces.Services;
 using Qomicex.Core.AOT.Services;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Qomicex.Core.AOT.Builder
+namespace Qomicex.Core.AOT.Builder;
+
+public sealed class GameCoreBuilder
 {
-    /// <summary>
-    /// 构建 <see cref="DefaultGameCore"/> 的构建器类。
-    /// </summary>
-    public sealed class GameCoreBuilder
-    {
-        private CoreOptions _options = new();
-        public DefaultGameCore Build()
-        {
-            var http = new HttpClient();
-            var downloadSource = new DefaultDownloadSourceManager();
-            
-            var 
+    private readonly CoreOptions _options = new();
 
-            return new DefaultGameCore();
-        }
+    public GameCoreBuilder Configure(Action<CoreOptions> configure)
+    {
+        configure(_options);
+        return this;
+    }
+
+    public GameCoreBuilder UseGameRoot(string path)
+    {
+        _options.GameRoot = path;
+        return this;
+    }
+
+    public GameCoreBuilder UseMicrosoftAuth(string clientId)
+    {
+        _options.MicrosoftClientId = clientId;
+        return this;
+    }
+
+    public GameCoreBuilder UseDownloadMirror(DownloadMirror mirror)
+    {
+        _options.DownloadMirror = mirror;
+        return this;
+    }
+
+    public DefaultGameCore Build()
+    {
+        var http = new HttpClient();
+        var downloadSource = new DefaultDownloadSourceManager();
+        var version = new VersionManagementService(_options.GameRoot, http, downloadSource);
+
+        return new DefaultGameCore(version, null!, null!, http);
     }
 }

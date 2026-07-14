@@ -8,7 +8,7 @@ namespace Qomicex.Core.AOT.Builder
     /// <summary>
     /// 启动核心的配置项类
     /// </summary>
-    public sealed class CoreOptions
+    public sealed record class CoreOptions
     {
         // 路径
         /// <summary>
@@ -33,32 +33,38 @@ namespace Qomicex.Core.AOT.Builder
         public DownloadMirror DownloadMirror { get; set; } = DownloadMirror.Official;
 
         // 子选项
-        /// <summary>
-        /// 账户选项
-        /// </summary>
-        public AuthOptions Auth { get; set; } = new();
-        /// <summary>
-        /// Java选项
-        /// </summary>
-        public JavaOptions Java { get; set; } = new();
+        public string? MicrosoftClientId { get; set; }
     }
 
-    public sealed class AuthOptions
+    public sealed record class AuthOptions
     {
         /// <summary>
         /// 登录方式
         /// </summary>
         public AuthMode Mode { get; set; } = AuthMode.Offline;
-        public string? MicrosoftClientId { get; set; }
-        public string? OfflineUsername { get; set; } = "Player";
+        public string? Uuid { get; set; }
+        public string? Name { get; set; } = "Player";
+        public string? Token { get; set; }
+        public string? AccessToken { get; set; }
+        public string? RefreshToken { get; set; }
     }
 
-    public sealed class JavaOptions
+    public sealed record class JavaOptions
     {
         public string JavaPath { get; set; } = "java";
         //public int MinMemoryMB { get; set; } = 1024;
         public int MaxMemoryMB { get; set; } = 512;
         public string[]? ExtraJvmArgs { get; set; }
+    }
+
+    public sealed record class LaunchOptions
+    {
+        public string? Version { get; set; }
+        public bool? VersionIsolation {  get; set; }
+        public string? JoinServer { get; set; }
+        public string? JoinWorld { get; set; }
+        public JavaOptions? JavaOptions { get; set; }
+        public AuthOptions? AuthOptions { get; set; }
     }
 
     public enum DownloadMirror { Official, BMCLAPI, MCBBS }
