@@ -75,7 +75,7 @@ public sealed class GameCoreBuilder
         var downloadSource = _source ?? new DefaultDownloadSourceManager(_options.DownloadMirror);
         var version = _version ?? new VersionManagementService(_options.GameRoot, http, downloadSource);
         var auth = _auth ?? new DefaultAuthProvider();
-        var launch = _launch ?? new DefaultLaunchExecutor();
+        var launch = _launch ?? new LaunchExecutor(_options.LauncherName,_options.GameRoot);
 
         return new DefaultGameCore(version, auth, launch, http);
     }

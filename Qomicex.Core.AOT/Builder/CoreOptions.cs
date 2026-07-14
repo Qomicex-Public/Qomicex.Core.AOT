@@ -10,6 +10,7 @@ namespace Qomicex.Core.AOT.Builder
     /// </summary>
     public sealed record class CoreOptions
     {
+        public string LauncherName { get; set; } = "Qomicex.Core.AOT";
         // 路径
         /// <summary>
         /// 游戏根目录, 默认值为 ".minecraft"
