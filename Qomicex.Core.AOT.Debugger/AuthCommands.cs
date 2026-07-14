@@ -70,10 +70,82 @@ internal static class AuthCommands
     static void AuthMicrosoft(string clientId)
     {
         var http = new HttpClient();
-        _current = new MicrosoftAuthProvider(http, clientId);
-        Trace.TraceInformation("Microsoft 设备码认证开始");
-        Trace.TraceInformation("请打开浏览器并完成登录...");
-        FireAuth(() => _current.AuthenticateAsync(new AuthRequest()));
+        var ms = new MicrosoftAuthProvider(http, clientId);
+        _current = ms;
+
+        FireAsync(async () =>
+        {
+            Trace.TraceInformation("正在获取设备码...");
+            var dc = await ms.StartDeviceCodeAsync();
+            if (dc == null)
+            {
+                Trace.TraceError("获取设备码失败");
+                return;
+            }
+
+            var deviceCode = dc["device_code"]?.ToString();
+            var userCode = dc["user_code"]?.ToString();
+            var verifyUri = dc["verification_uri"]?.ToString();
+            var interval = dc["interval"]?.GetValue<int>() ?? 5;
+            var expiresIn = dc["expires_in"]?.GetValue<int>() ?? 900;
+
+            if (string.IsNullOrEmpty(deviceCode) || string.IsNullOrEmpty(userCode))
+            {
+                Trace.TraceError("设备码响应不完整");
+                return;
+            }
+
+            Trace.TraceInformation($"请在浏览器打开: {verifyUri}");
+            Trace.TraceInformation($"输入代码: {userCode}");
+
+            var deadline = DateTimeOffset.UtcNow.AddSeconds(expiresIn);
+
+            while (DateTimeOffset.UtcNow < deadline)
+            {
+                await Task.Delay(interval * 1000);
+                var poll = await ms.PollForTokenAsync(deviceCode);
+                if (poll == null) continue;
+
+                var err = poll["error"]?.ToString();
+                if (string.IsNullOrEmpty(err))
+                {
+                    var accessToken = poll["access_token"]?.ToString();
+                    var refreshToken = poll["refresh_token"]?.ToString();
+                    if (string.IsNullOrEmpty(accessToken))
+                    {
+                        Trace.TraceError("poll 响应缺少 access_token");
+                        return;
+                    }
+
+                    Trace.TraceInformation("用户已授权，正在完成登录...");
+                    var result = await ms.CompleteLoginAsync(accessToken, refreshToken ?? "");
+                    _lastResult = result;
+                    if (result.Success)
+                    {
+                        Trace.TraceInformation($"认证成功: {result.Username} ({result.Uuid})");
+                        Trace.TraceInformation($"  AccessToken: {result.AccessToken?[..Math.Min(20, result.AccessToken?.Length ?? 0)]}...");
+                        Trace.TraceInformation($"  UserType:    {result.UserType}");
+                        Trace.TraceInformation($"  ExpiresAt:   {result.ExpiresAt?.ToString("O") ?? "(永不过期)"}");
+                    }
+                    else
+                    {
+                        Trace.TraceError($"认证失败: {result.ErrorMessage}");
+                    }
+                    return;
+                }
+
+                if (err is "authorization_declined" or "expired_token")
+                {
+                    Trace.TraceError($"用户已拒绝或代码已过期: {err}");
+                    return;
+                }
+
+                if (err == "slow_down")
+                    interval += 5;
+            }
+
+            Trace.TraceError("设备码已过期，认证未完成");
+        });
     }
 
     static void ValidateToken()
