@@ -5,7 +5,7 @@ using Qomicex.Core.AOT.Models.VersionMetadata;
 
 namespace Qomicex.Core.AOT.Services;
 
-public class DefaultVersionLocator : IVersionLocator
+internal class DefaultVersionLocator : IVersionLocator
 {
     private readonly string _versionsRootPath;
     private readonly Dictionary<string, LocalVersionInfo> _versionCache = new();

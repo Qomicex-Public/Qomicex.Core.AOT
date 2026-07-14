@@ -3,7 +3,7 @@ using Qomicex.Core.AOT.Models.Download;
 
 namespace Qomicex.Core.AOT.Services;
 
-public class DefaultDownloadSourceManager : IDownloadSourceManager
+internal class DefaultDownloadSourceManager : IDownloadSourceManager
 {
     private readonly List<DownloadSource> _sources;
     private readonly HttpClient _httpClient;
@@ -15,7 +15,7 @@ public class DefaultDownloadSourceManager : IDownloadSourceManager
         [
             new(DownloadSourceType.Official, "Mojang官方", "https://launcher.mojang.com/", true, 100),
             new(DownloadSourceType.BMCLAPI, "BMCLAPI镜像", "https://bmclapi2.bangbang93.com/", true, 1),
-            new(DownloadSourceType.MCBBS, "MCBBS镜像", "https://download.mcbbs.net/", true, 2),
+            //new(DownloadSourceType.MCBBS, "MCBBS镜像", "https://download.mcbbs.net/", true, 2),
         ];
     }
 

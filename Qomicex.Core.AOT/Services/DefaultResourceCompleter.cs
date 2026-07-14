@@ -7,7 +7,7 @@ using Qomicex.Core.AOT.Models.VersionMetadata;
 
 namespace Qomicex.Core.AOT.Services;
 
-public class DefaultResourceCompleter : IResourceCompleter
+internal class DefaultResourceCompleter : IResourceCompleter
 {
     private readonly string _gameRootPath;
     private readonly IDownloadSourceManager _sourceManager;

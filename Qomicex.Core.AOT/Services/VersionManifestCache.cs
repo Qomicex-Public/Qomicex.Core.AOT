@@ -3,7 +3,7 @@ using Qomicex.Core.AOT.Models.VersionManifest;
 
 namespace Qomicex.Core.AOT.Services;
 
-public class VersionManifestCache
+internal class VersionManifestCache
 {
     private readonly string _cacheFilePath;
     private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(5);

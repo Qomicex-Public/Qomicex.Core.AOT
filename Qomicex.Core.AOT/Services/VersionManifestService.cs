@@ -6,7 +6,7 @@ using Qomicex.Core.AOT.Models.VersionMetadata;
 
 namespace Qomicex.Core.AOT.Services;
 
-public class VersionManifestService : IVersionManifestService
+internal class VersionManifestService : IVersionManifestService
 {
     private readonly HttpClient _httpClient;
     private readonly CombinedJsonContext _ctx = CombinedJsonContext.Default;

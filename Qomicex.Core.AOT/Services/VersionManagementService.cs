@@ -9,7 +9,7 @@ using Qomicex.Core.AOT.Models.VersionMetadata;
 
 namespace Qomicex.Core.AOT.Services;
 
-public class VersionManagementService : IVersionManagementService
+internal class VersionManagementService : IVersionManagementService
 {
     private readonly string _gameRootPath;
     private readonly VersionManifestService _manifestService;
