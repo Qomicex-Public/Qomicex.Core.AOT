@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿
+namespace Qomicex.Core.AOT.Interfaces;
 
-namespace Qomicex.Core.AOT.Interfaces
+public interface IVersionProvider
 {
-    internal interface IVersionProvider
-    {
-    }
+        
 }

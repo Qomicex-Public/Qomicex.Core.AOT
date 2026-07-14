@@ -4,6 +4,14 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PublishAot>true</PublishAot>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>Qomicex.Core.AOT</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Qomicex-Public</Authors>
+    <Description>QML启动核心 - AOT优化版本</Description>
   </PropertyGroup>
 
   <ItemGroup>

@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Qomicex.Core.AOT.Interfaces
+namespace Qomicex.Core.AOT.Interfaces;
+
+internal interface IAuthProvider
 {
-    internal interface IAuthProvider
-    {
-    }
 }
