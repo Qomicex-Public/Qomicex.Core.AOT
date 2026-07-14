@@ -7,6 +7,12 @@
     <PublishAot>true</PublishAot>
   </PropertyGroup>
 
+  <!-- 启用 AOT 兼容性分析 -->
+  <PropertyGroup>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
   <PropertyGroup>
     <PackageId>Qomicex.Core.AOT</PackageId>
     <Version>1.0.0</Version>
@@ -27,6 +33,15 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resource.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- 确保 JSON 上下文在 AOT 编译时被保留 -->
+  <ItemGroup>
+    <TrimmerRootAssembly Include="Qomicex.Core.AOT" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Qomicex.Core.AOT.Tests" />
   </ItemGroup>
 
 </Project>

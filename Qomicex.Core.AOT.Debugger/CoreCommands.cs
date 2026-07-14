@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Qomicex.Core.AOT.Builder;
 using Qomicex.Core.AOT.Core;
 using Qomicex.Core.AOT.Models.Download;
 
@@ -36,7 +37,9 @@ internal static class CoreCommands
         try
         {
             _core?.Dispose();
-            _core = new DefaultGameCore(gameRoot);
+            _core = new GameCoreBuilder()
+                .UseGameRoot(gameRoot)
+                .Build();
             Trace.TraceInformation($"Core 已初始化, 游戏根目录: {gameRoot}");
         }
         catch (Exception ex)
@@ -57,7 +60,7 @@ internal static class CoreCommands
     public static async Task ListVersionsAsync(DefaultGameCore core, bool forceRefresh)
     {
         Trace.TraceInformation("正在获取版本列表...");
-        var versions = await core.GetAvailableVersionsAsync(forceRefresh);
+        var versions = await core.Version.GetAvailableVersionsAsync(forceRefresh);
         Trace.TraceInformation($"共 {versions.Count} 个版本");
 
         var groups = versions.GroupBy(v => v.Type).OrderBy(g => g.Key);
@@ -73,14 +76,14 @@ internal static class CoreCommands
     public static async Task ShowLatestAsync(DefaultGameCore core)
     {
         Trace.TraceInformation("正在获取最新版本...");
-        var latest = await core.GetLatestVersionsAsync();
+        var latest = await core.Version.GetLatestVersionsAsync();
         Trace.TraceInformation($"Release:  {latest.Release}");
         Trace.TraceInformation($"Snapshot: {latest.Snapshot}");
     }
 
     public static void ListInstalled(DefaultGameCore core)
     {
-        var installed = core.GetInstalledVersions();
+        var installed = core.Version.GetInstalledVersions();
         Trace.TraceInformation($"已安装 {installed.Count} 个版本");
 
         foreach (var v in installed)
@@ -96,7 +99,7 @@ internal static class CoreCommands
     {
         try
         {
-            var meta = await _core!.GetVersionMetadataAsync(versionId);
+            var meta = await _core!.Version.GetVersionMetadataAsync(versionId);
             Trace.TraceInformation($"ID:        {meta.Id}");
             Trace.TraceInformation($"类型:      {meta.Type}");
             Trace.TraceInformation($"发布时间:  {meta.ReleaseTime}");
@@ -117,7 +120,7 @@ internal static class CoreCommands
 
     public static void CheckVersion(string versionId)
     {
-        var installed = _core!.IsVersionInstalled(versionId);
+        var installed = _core!.Version.IsVersionInstalled(versionId);
         Trace.TraceInformation($"版本 {versionId}: {(installed ? "已安装" : "未安装")}");
     }
 
@@ -136,14 +139,14 @@ internal static class CoreCommands
             Trace.TraceInformation($"[{status}] {p.FileName}  {p.Percentage:F1}%");
         });
 
-        await _core!.InstallVersionAsync(versionId, progress);
+        await _core!.Version.InstallVersionAsync(versionId, progress);
         Trace.TraceInformation($"版本 {versionId} 安装完成");
     }
 
     public static async Task UninstallVersionAsync(string versionId)
     {
         Trace.TraceInformation($"卸载 {versionId}...");
-        await _core!.UninstallVersionAsync(versionId);
+        await _core!.Version.UninstallVersionAsync(versionId);
         Trace.TraceInformation($"版本 {versionId} 已卸载");
     }
 }

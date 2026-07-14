@@ -5,9 +5,7 @@ namespace Qomicex.Core.AOT.Models.VersionMetadata;
 /// <summary>
 /// 表示启动参数
 /// </summary>
-[JsonPolymorphic(UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToBaseType)]
-[JsonDerivedType(typeof(VersionArgumentsOld), typeDiscriminator: "old")]
-[JsonDerivedType(typeof(VersionArgumentsNew), typeDiscriminator: "new")]
+[JsonConverter(typeof(Qomicex.Core.AOT.JsonConverters.VersionArgumentsConverter))]
 public abstract record VersionArguments;
 
 /// <summary>
@@ -29,9 +27,6 @@ public record VersionArgumentsOld(
 /// <summary>
 /// 参数项，可以是字符串或带规则的对象
 /// </summary>
-[JsonPolymorphic(UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToBaseType)]
-[JsonDerivedType(typeof(ArgumentString), typeDiscriminator: "string")]
-[JsonDerivedType(typeof(ArgumentObject), typeDiscriminator: "object")]
 public abstract record ArgumentItem;
 
 /// <summary>

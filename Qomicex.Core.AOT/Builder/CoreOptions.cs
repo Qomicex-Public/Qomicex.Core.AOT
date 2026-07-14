@@ -67,6 +67,6 @@ namespace Qomicex.Core.AOT.Builder
         public AuthOptions? AuthOptions { get; set; }
     }
 
-    public enum DownloadMirror { Official, BMCLAPI, MCBBS }
+    public enum DownloadMirror { Official, BMCLAPI }
     public enum AuthMode { Offline, Microsoft, Yggdrasil }
 }

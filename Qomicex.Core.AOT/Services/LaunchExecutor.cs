@@ -5,9 +5,6 @@ using Qomicex.Core.AOT.JsonContext;
 using Qomicex.Core.AOT.Models.ParamsMeta;
 using Qomicex.Core.AOT.Public.Models;
 using Qomicex.Core.AOT.Utils;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Text.Json;
 
 namespace Qomicex.Core.AOT.Services
@@ -26,6 +23,12 @@ namespace Qomicex.Core.AOT.Services
         {
 
             //return new LaunchResult();
+            return null;//Temp
+        }
+
+        public Task<bool> KillAsync(int processId)
+        {
+            throw new NotImplementedException();
         }
 
         private string SelectParams(LaunchOptions options)
