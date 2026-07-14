@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="Qomicex.Core.AOT/Qomicex.Core.AOT.csproj" />
+  <Project Path="Qomicex.Core.AOT.Debugger/Qomicex.Core.AOT.Debugger.csproj" />
 </Solution>
