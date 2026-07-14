@@ -172,6 +172,11 @@ internal sealed class Program
                 StopAllJobs();
                 break;
 
+            case "auth":
+                if (args.Length >= 1) AuthCommands.Execute(args);
+                else Trace.TraceError("用法: auth offline|yggdrasil|microsoft|validate|invalidate");
+                break;
+
             case "sysinfo":
                 ShowSysInfo();
                 break;
@@ -318,6 +323,11 @@ internal sealed class Program
             ("", ""),
             ("log [级别] <消息>", "发送测试日志 (trace/debug/info/warn/error)"),
             ("echo <消息>", "回显"),
+            ("auth offline <用户名>", "测试离线认证"),
+            ("auth yggdrasil <url> <邮箱> [密码]", "测试 Yggdrasil 认证"),
+            ("auth microsoft <clientId>", "测试 Microsoft 设备码认证"),
+            ("auth validate", "验证当前 token"),
+            ("auth invalidate", "吊销当前 token"),
             ("sysinfo", "系统信息"),
             ("clear / cls", "清屏"),
             ("exit / quit / q", "退出"),
