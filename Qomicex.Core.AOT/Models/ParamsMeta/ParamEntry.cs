@@ -16,7 +16,7 @@ namespace Qomicex.Core.AOT.Models.ParamsMeta
         [property: JsonPropertyName("inheritsFrom")] string InheritsFrom,
         [property: JsonPropertyName("mainClass")] string MainClass,
         [property: JsonPropertyName("minecraftArguments")] string MinecraftArguments,
-        [property: JsonPropertyName("assetIndex")] string AssetIndex
+        [property: JsonPropertyName("assetIndex")] AssetIndex AssetIndex
     );
     public record Arguments(
         [property: JsonPropertyName("jvm")] List<JsonElement> Jvm,

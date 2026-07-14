@@ -9,8 +9,8 @@ public sealed class DefaultGameCore : IDisposable
     private bool _disposed;
 
     public IVersionManagementService Version { get; }
-    internal IAuthProvider Auth { get; }
-    internal ILaunchExecutor Launch { get; }
+    public IAuthProvider Auth { get; }
+    public ILaunchExecutor Launch { get; }
 
     internal DefaultGameCore(
         IVersionManagementService version,

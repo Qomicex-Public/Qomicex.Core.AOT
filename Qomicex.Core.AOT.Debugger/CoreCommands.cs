@@ -95,6 +95,36 @@ internal static class CoreCommands
         }
     }
 
+    public static async void LaunchGame(DefaultGameCore core,string version,string java)
+    {
+        var result = await core.Launch.LaunchAsync(new LaunchOptions
+        {
+            Version = version,
+            VersionIsolation = true,
+            JavaOptions = new JavaOptions
+            {
+                JavaPath = java,
+                MaxMemoryMB = 4096,
+            },
+            AuthOptions = new AuthOptions
+            {
+                Name = "Steve",
+                Uuid = "...",
+                Token = "...",
+            },
+        });
+
+        if (result.Success)
+        {
+            Console.WriteLine($"游戏已启动, PID: {result.ProcessId}");
+        }
+        else
+        {
+            Console.WriteLine($"启动失败: {result.Message}");
+        }
+
+    }
+
     public static async Task ShowVersionInfoAsync(string versionId)
     {
         try

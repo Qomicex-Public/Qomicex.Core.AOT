@@ -18,7 +18,7 @@ using System.Text.Json.Nodes;
 
 namespace Qomicex.Core.AOT.Services
 {
-    internal sealed class LaunchExecutor:ILaunchExecutor
+    public sealed class LaunchExecutor:ILaunchExecutor
     {
         private string _launchName;
         private string _gameDir;
@@ -47,7 +47,7 @@ namespace Qomicex.Core.AOT.Services
                     {
                         StartInfo = new ProcessStartInfo
                         {
-                            FileName = launchOptions.JavaOptions.JavaPath,
+                            FileName = NormalizeArg(launchOptions.JavaOptions.JavaPath),
                             Arguments = paramsStr,
                             UseShellExecute = false,
                             RedirectStandardOutput = true,
@@ -56,6 +56,8 @@ namespace Qomicex.Core.AOT.Services
                         },
                         EnableRaisingEvents = true
                     };
+
+                    process.Start();
 
                     var result = new LaunchResult
                     {
@@ -86,7 +88,7 @@ namespace Qomicex.Core.AOT.Services
                         process.Dispose();
                     };
 
-                    process.Start();
+                    
                     process.BeginOutputReadLine();
                     process.BeginErrorReadLine();
 
@@ -98,7 +100,7 @@ namespace Qomicex.Core.AOT.Services
                     {
                         Success = false,
                         ProcessId = -1,
-                        Message = "启动失败",
+                        Message = $"启动失败,{ex.Message}",
                         Exception = ex
                     };
                 }
@@ -326,13 +328,13 @@ namespace Qomicex.Core.AOT.Services
 
             //处理参数
             // 获取 assetIndex
-            string assetsIndex = config!.AssetIndex;
+            string assetsIndex = config!.AssetIndex.Id;
             if(string.IsNullOrEmpty(assetsIndex))
             {
                 if (config!.InheritsFrom is null)
                     throw new ParamsException("获取AssetIndex错误");
                 var inheritsFromConfig = ParseGameJson(options with { Version = config!.InheritsFrom });
-                assetsIndex = inheritsFromConfig!.AssetIndex;
+                assetsIndex = inheritsFromConfig!.AssetIndex.Id;
             }
             //处理账户
             string loginMode = "Legacy";
@@ -354,7 +356,7 @@ namespace Qomicex.Core.AOT.Services
             var sb = new StringBuilder();
             foreach (var cp in cpLibs)
             {
-                var path = Path.Combine(_gameDir, "libraries", LibHelper.MavenToPath(cp.Name),SystemHelper.GetSeparator());
+                var path = Path.Combine(_gameDir, "libraries", $"{LibHelper.MavenToPath(cp.Name)}{SystemHelper.GetSeparator()}");
                 sb.Append(path);
             }
             sb.Append(mainJarPath);
@@ -572,7 +574,16 @@ namespace Qomicex.Core.AOT.Services
 
             //处理当前json的jvm
             if (config!.Arguments?.Jvm is null)
+            {
+                //适配老版本Modloader Json (例如LiteLoader)
+                jvmList.Add("-Djava.library.path=${natives_directory}");
+                jvmList.Add("-cp");
+                jvmList.Add("${classpath}");
+                jvmList.Add("${authlib_injector_param}");
+                jvmList.Add("-Xmn256m");
+                jvmList.Add("-Xmx${max_memory}m");
                 return jvmList;//旧版兼容
+            }
 
             foreach (var element in config!.Arguments.Jvm)
             {
@@ -693,6 +704,7 @@ namespace Qomicex.Core.AOT.Services
 
         string NormalizeArg(string value)
         {
+            if (string.IsNullOrEmpty(value)) return string.Empty;
             value = value.Trim();
             if (value.Contains(" ") && !value.StartsWith("\"") && !value.EndsWith("\""))
                 value = $"\"{value}\"";

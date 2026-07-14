@@ -120,6 +120,11 @@ internal sealed class Program
                 else CoreCommands.EnsureCore();
                 break;
 
+            case "launch":
+                if (CoreCommands.IsInitialized) CoreCommands.LaunchGame(CoreCommands.Core!, args[0], args[1]);
+                else CoreCommands.EnsureCore();
+                break;
+
             case "info":
                 if (args.Length >= 1 && CoreCommands.IsInitialized) CoreCommands.FireAsync(() => CoreCommands.ShowVersionInfoAsync(args[0]));
                 else if (args.Length < 1) Trace.TraceError("用法: info <版本ID>");

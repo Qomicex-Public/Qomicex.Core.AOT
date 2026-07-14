@@ -41,6 +41,7 @@ public sealed record class LaunchOptions
     public JavaOptions? JavaOptions { get; set; }
     public AuthOptions? AuthOptions { get; set; }
 }
+public enum AuthMode { Offline, Microsoft, Yggdrasil }
 
 public enum DownloadMirror { Official, BMCLAPI }
-public enum AuthMode { Offline, Microsoft, Yggdrasil }
+
