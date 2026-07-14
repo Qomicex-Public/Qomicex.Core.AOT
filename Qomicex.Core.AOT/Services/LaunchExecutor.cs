@@ -18,7 +18,7 @@ using System.Text.Json.Nodes;
 
 namespace Qomicex.Core.AOT.Services
 {
-    public sealed class LaunchExecutor:ILaunchExecutor
+    internal sealed class LaunchExecutor:ILaunchExecutor
     {
         private string _launchName;
         private string _gameDir;
