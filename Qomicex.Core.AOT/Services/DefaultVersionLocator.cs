@@ -345,7 +345,7 @@ internal class DefaultVersionLocator : IVersionLocator
                 }
             }
             //检查mainClass
-            string mainClass = meta.MainClass;
+            string mainClass = meta.MainClass.ToLower();
             if (mainClass == "net.minecraft.client.main.main")
             {
                 return new List<ModloaderInfo> { new ModloaderInfo(ModloaderType.Vanilla,"")};

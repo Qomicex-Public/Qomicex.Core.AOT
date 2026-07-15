@@ -122,6 +122,7 @@ internal sealed class Program
 
             case "launch":
                 if (CoreCommands.IsInitialized) CoreCommands.LaunchGame(CoreCommands.Core!, args[0], args[1]);
+                else if (args.Length < 1) Trace.TraceError("用法: launch <版本ID> <Java路径>");
                 else CoreCommands.EnsureCore();
                 break;
 
@@ -318,6 +319,12 @@ internal sealed class Program
             ("check <版本ID>", "检查版本是否已安装"),
             ("install <版本ID>", "安装指定版本"),
             ("uninstall <版本ID>", "卸载指定版本"),
+            ("launch <版本ID> <Java路径>", "启动指定版本"),
+            ("auth offline <用户名>", "测试离线认证"),
+            ("auth yggdrasil <url> <邮箱> [密码]", "测试 Yggdrasil 认证"),
+            ("auth microsoft <clientId>", "测试 Microsoft 设备码认证"),
+            ("auth validate", "验证当前 token"),
+            ("auth invalidate", "吊销当前 token"),
             ("", ""),
             ("tail <文件路径>", "后台跟踪日志文件"),
             ("watch <目录> [模式]", "后台监视目录文件变化"),
@@ -328,11 +335,6 @@ internal sealed class Program
             ("", ""),
             ("log [级别] <消息>", "发送测试日志 (trace/debug/info/warn/error)"),
             ("echo <消息>", "回显"),
-            ("auth offline <用户名>", "测试离线认证"),
-            ("auth yggdrasil <url> <邮箱> [密码]", "测试 Yggdrasil 认证"),
-            ("auth microsoft <clientId>", "测试 Microsoft 设备码认证"),
-            ("auth validate", "验证当前 token"),
-            ("auth invalidate", "吊销当前 token"),
             ("sysinfo", "系统信息"),
             ("clear / cls", "清屏"),
             ("exit / quit / q", "退出"),

@@ -91,7 +91,7 @@ internal static class CoreCommands
             var size = v.TotalSize > 1024 * 1024
                 ? $"{v.TotalSize / 1024.0 / 1024.0:F1} MB"
                 : $"{v.TotalSize / 1024.0:F1} KB";
-            Trace.TraceInformation($"  {v.Id,-20} {v.Type,-10} {size,10}  {(v.IsComplete ? "完整" : "不完整")}");
+            Trace.TraceInformation($"  {v.Id,-20} {string.Join(", ", v.Type.Select(t => $"{t.Type.ToString()} {t.Version}")),-10} {size,10} {v.VanillaVersion,20}  {(v.IsComplete ? "完整" : "不完整")}");
         }
     }
 
