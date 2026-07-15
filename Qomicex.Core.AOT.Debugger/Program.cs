@@ -183,6 +183,24 @@ internal sealed class Program
                 else Trace.TraceError("用法: auth offline|yggdrasil|microsoft|validate|invalidate");
                 break;
 
+            case "exp":
+            case "expansion":
+                if (CoreCommands.IsInitialized)
+                    ExpansionCommands.Execute(CoreCommands.Core!, args);
+                else CoreCommands.EnsureCore();
+                break;
+
+            case "install-fabric":
+            case "install-forge":
+            case "install-neoforge":
+            case "install-quilt":
+            case "install-litelloader":
+            case "install-optifine":
+                if (CoreCommands.IsInitialized)
+                    InstallerCommands.Execute(args);
+                else CoreCommands.EnsureCore();
+                break;
+
             case "sysinfo":
                 ShowSysInfo();
                 break;
@@ -336,6 +354,22 @@ internal sealed class Program
             ("log [级别] <消息>", "发送测试日志 (trace/debug/info/warn/error)"),
             ("echo <消息>", "回显"),
             ("sysinfo", "系统信息"),
+            ("", ""),
+            ("expansion modrinth search <q> [-t type] [-v ver] [-l loader]", "搜索 Modrinth"),
+            ("expansion modrinth info <id>", "Modrinth 项目详情"),
+            ("expansion curseforge search <q> [-v ver] [-l loader] -k <key>", "搜索 CurseForge"),
+            ("expansion curseforge info <id> -k <key>", "CurseForge 模组详情"),
+            ("expansion ftb search <q> [-v ver]", "搜索 FTB 整合包"),
+            ("expansion ftb info <id>", "FTB 整合包详情"),
+            ("expansion mods list <ver> [--segmented]", "列出本地模组"),
+            ("", ""),
+            ("install-fabric <vid> <gv> <fv>", "安装 Fabric 加载器"),
+            ("install-forge <vid> <gv> <path> <java>", "安装 Forge 加载器"),
+            ("install-neoforge <vid> <gv> <path> <java>", "安装 NeoForge 加载器"),
+            ("install-quilt <vid> <gv> <qv>", "安装 Quilt 加载器"),
+            ("install-litelloader <vid> <gv> <lv>", "安装 LiteLoader"),
+            ("install-optifine <vid> <gv> <tp> <path> <java>", "安装 OptiFine"),
+            ("", ""),
             ("clear / cls", "清屏"),
             ("exit / quit / q", "退出"),
         };

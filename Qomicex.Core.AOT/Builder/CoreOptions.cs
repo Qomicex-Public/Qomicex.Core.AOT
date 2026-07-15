@@ -4,6 +4,7 @@ public sealed record class CoreOptions
 {
     public string LauncherName { get; set; } = "Qomicex.Core.AOT";
     public string GameRoot { get; set; } = ".minecraft";
+    public string UserAgent { get; set; } = "Qomicex.Core/1.0 (tmoaminecraft@gmail.com; lenmei233@vip.qq.com)";
     public int MaxConcurrentDownloads { get; set; } = 8;
     public TimeSpan CacheExpiry { get; set; } = TimeSpan.FromMinutes(5);
     public DownloadMirror DownloadMirror { get; set; } = DownloadMirror.Official;

@@ -5,7 +5,7 @@ using Qomicex.Core.AOT.Interfaces;
 
 namespace Qomicex.Core.AOT.Services;
 
-internal sealed class MicrosoftAuthProvider : IAuthProvider
+public sealed class MicrosoftAuthProvider : IAuthProvider
 {
     private readonly HttpClient _http;
     private readonly string _clientId;

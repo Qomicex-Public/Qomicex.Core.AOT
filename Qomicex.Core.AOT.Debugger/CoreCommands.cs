@@ -38,9 +38,16 @@ internal static class CoreCommands
         {
             _core?.Dispose();
             _core = new GameCoreBuilder()
-                .UseGameRoot(gameRoot)
+                .Configure(o =>
+                {
+                    o.GameRoot = gameRoot;
+                    o.UserAgent = $"Qomicex.Debugger/{typeof(CoreCommands).Assembly.GetName().Version?.ToString(3) ?? "0.0.0"}";
+                    o.DownloadMirror = DownloadMirror.BMCLAPI;
+                    o.MaxConcurrentDownloads = 16;
+                })
                 .Build();
             Trace.TraceInformation($"Core 已初始化, 游戏根目录: {gameRoot}");
+            Trace.TraceInformation($"  UserAgent: {_core!.HttpClient.DefaultRequestHeaders.UserAgent}");
         }
         catch (Exception ex)
         {

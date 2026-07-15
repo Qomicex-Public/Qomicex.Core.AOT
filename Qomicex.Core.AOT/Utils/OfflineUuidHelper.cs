@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Qomicex.Core.AOT.Utils;
 
-internal static class OfflineUuidHelper
+public static class OfflineUuidHelper
 {
     public static string GenerateUuid(string name)
     {

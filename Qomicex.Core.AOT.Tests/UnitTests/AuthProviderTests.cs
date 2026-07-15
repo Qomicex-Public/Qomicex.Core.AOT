@@ -1,10 +1,8 @@
 using System.Net;
-using System.Text.Json;
+using System.Text.Json.Nodes;
 using Qomicex.Core.AOT.Builder;
 using Qomicex.Core.AOT.Core;
 using Qomicex.Core.AOT.Interfaces;
-using Qomicex.Core.AOT.JsonContext;
-using Qomicex.Core.AOT.Models.Auth;
 using Qomicex.Core.AOT.Services;
 using Qomicex.Core.AOT.Utils;
 using Xunit.Abstractions;
@@ -102,22 +100,28 @@ public class AuthProviderTests
         var handler = new MockHttpMessageHandler(async req =>
         {
             var body = await req.Content!.ReadAsStringAsync();
-            var authReq = JsonSerializer.Deserialize(body, AuthJsonContext.Default.YggdrasilAuthenticateRequest);
-            authReq.Should().NotBeNull();
-            authReq!.Username.Should().Be("test@test.com");
+            var authReq = JsonNode.Parse(body)!.AsObject();
+            authReq["username"]?.ToString().Should().Be("test@test.com");
 
-            var resp = new YggdrasilAuthenticateResponse(
-                AccessToken: "mock-access-token",
-                ClientToken: "mock-client-token",
-                AvailableProfiles: null,
-                SelectedProfile: new YggdrasilProfile("abc123def456", "TestPlayer", null),
-                User: new YggdrasilUser("user123", null)
-            );
+            var resp = new JsonObject
+            {
+                ["accessToken"] = "mock-access-token",
+                ["clientToken"] = "mock-client-token",
+                ["availableProfiles"] = null,
+                ["selectedProfile"] = new JsonObject
+                {
+                    ["id"] = "abc123def456",
+                    ["name"] = "TestPlayer"
+                },
+                ["user"] = new JsonObject
+                {
+                    ["id"] = "user123"
+                }
+            };
 
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent(
-                    JsonSerializer.Serialize(resp, AuthJsonContext.Default.YggdrasilAuthenticateResponse))
+                Content = new StringContent(resp.ToJsonString())
             };
         });
 
@@ -141,11 +145,15 @@ public class AuthProviderTests
     {
         var handler = new MockHttpMessageHandler(_ =>
         {
-            var error = new YggdrasilError("ForbiddenOperationException", "Invalid credentials", null);
+            var error = new JsonObject
+            {
+                ["error"] = "ForbiddenOperationException",
+                ["errorMessage"] = "Invalid credentials",
+                ["cause"] = (string?)null
+            };
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Forbidden)
             {
-                Content = new StringContent(
-                    JsonSerializer.Serialize(error, AuthJsonContext.Default.YggdrasilError))
+                Content = new StringContent(error.ToJsonString())
             });
         });
 

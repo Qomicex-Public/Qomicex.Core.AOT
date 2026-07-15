@@ -4,7 +4,7 @@ using Qomicex.Core.AOT.Models.Download;
 
 namespace Qomicex.Core.AOT.Services;
 
-internal class DefaultDownloadSourceManager : IDownloadSourceManager
+public class DefaultDownloadSourceManager : IDownloadSourceManager
 {
     private readonly List<DownloadSource> _sources;
     private readonly HttpClient _httpClient;

@@ -3,6 +3,7 @@ using Qomicex.Core.AOT.Interfaces;
 using Qomicex.Core.AOT.Interfaces.Core;
 using Qomicex.Core.AOT.Interfaces.Services;
 using Qomicex.Core.AOT.Services;
+using Qomicex.Core.AOT.Services.Installers;
 
 namespace Qomicex.Core.AOT.Builder;
 
@@ -93,12 +94,14 @@ public sealed class GameCoreBuilder
     public DefaultGameCore Build()
     {
         var http = _http ?? new HttpClient();
+        http.DefaultRequestHeaders.UserAgent.ParseAdd(_options.UserAgent);
+        InstallerBase.DefaultUserAgent ??= _options.UserAgent;
         var downloadSource = _source ?? new DefaultDownloadSourceManager(_options.DownloadMirror);
         var version = _version ?? new VersionManagementService(_options.GameRoot, http, downloadSource);
         var auth = _auth ?? CreateAuthProvider(http);
         var launch = _launch ?? new LaunchExecutor(_options.LauncherName, _options.GameRoot);
 
-        return new DefaultGameCore(version, auth, launch, http);
+        return new DefaultGameCore(version, auth, launch, http, _options.GameRoot);
     }
 
     private IAuthProvider CreateAuthProvider(HttpClient http)

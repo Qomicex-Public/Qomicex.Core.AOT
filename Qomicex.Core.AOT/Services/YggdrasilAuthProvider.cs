@@ -5,7 +5,7 @@ using Qomicex.Core.AOT.Models.Auth;
 
 namespace Qomicex.Core.AOT.Services;
 
-internal sealed class YggdrasilAuthProvider : IAuthProvider
+public sealed class YggdrasilAuthProvider : IAuthProvider
 {
     private readonly HttpClient _http;
     private readonly string _baseUrl;
