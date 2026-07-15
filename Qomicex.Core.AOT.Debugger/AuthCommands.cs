@@ -1,12 +1,13 @@
 using System.Diagnostics;
+using Qomicex.Core.AOT.Builder;
+using Qomicex.Core.AOT.Core;
 using Qomicex.Core.AOT.Interfaces;
-using Qomicex.Core.AOT.Services;
 
 namespace Qomicex.Core.AOT.Debugger;
 
 internal static class AuthCommands
 {
-    static IAuthProvider? _current;
+    static DefaultGameCore? _core;
     static AuthResult? _lastResult;
 
     public static void Execute(string[] args)
@@ -46,9 +47,16 @@ internal static class AuthCommands
 
     static void AuthOffline(string username)
     {
-        _current = new DefaultAuthProvider();
+        DisposeCore();
+        var tmp = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(tmp);
+        _core = new GameCoreBuilder()
+            .UseGameRoot(tmp)
+            .UseOfflineAuth(username)
+            .Build();
+
         Trace.TraceInformation($"离线认证: {username}");
-        FireAuth(() => _current.AuthenticateAsync(new AuthRequest
+        FireAuth(() => _core.Auth.AuthenticateAsync(new AuthRequest
         {
             Username = username,
             IsOffline = true
@@ -57,10 +65,16 @@ internal static class AuthCommands
 
     static void AuthYggdrasil(string url, string email, string? password)
     {
-        var http = new HttpClient();
-        _current = new YggdrasilAuthProvider(http, url);
+        DisposeCore();
+        var tmp = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(tmp);
+        _core = new GameCoreBuilder()
+            .UseGameRoot(tmp)
+            .UseYggdrasilAuth(url, email)
+            .Build();
+
         Trace.TraceInformation($"Yggdrasil 认证: {email} @ {url}");
-        FireAuth(() => _current.AuthenticateAsync(new AuthRequest
+        FireAuth(() => _core.Auth.AuthenticateAsync(new AuthRequest
         {
             Username = email,
             Password = password ?? ""
@@ -69,78 +83,58 @@ internal static class AuthCommands
 
     static void AuthMicrosoft(string clientId)
     {
-        var http = new HttpClient();
-        var ms = new MicrosoftAuthProvider(http, clientId);
-        _current = ms;
+        DisposeCore();
+        var tmp = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(tmp);
+        _core = new GameCoreBuilder()
+            .UseGameRoot(tmp)
+            .UseMicrosoftAuth(clientId)
+            .Build();
 
         FireAsync(async () =>
         {
             Trace.TraceInformation("正在获取设备码...");
-            var dc = await ms.StartDeviceCodeAsync();
+            var dc = await _core.Auth.StartDeviceCodeAsync();
             if (dc == null)
             {
                 Trace.TraceError("获取设备码失败");
                 return;
             }
 
-            var deviceCode = dc["device_code"]?.ToString();
-            var userCode = dc["user_code"]?.ToString();
-            var verifyUri = dc["verification_uri"]?.ToString();
-            var interval = dc["interval"]?.GetValue<int>() ?? 5;
-            var expiresIn = dc["expires_in"]?.GetValue<int>() ?? 900;
+            Trace.TraceInformation($"请在浏览器打开: {dc.VerificationUri}");
+            Trace.TraceInformation($"输入代码: {dc.UserCode}");
 
-            if (string.IsNullOrEmpty(deviceCode) || string.IsNullOrEmpty(userCode))
-            {
-                Trace.TraceError("设备码响应不完整");
-                return;
-            }
-
-            Trace.TraceInformation($"请在浏览器打开: {verifyUri}");
-            Trace.TraceInformation($"输入代码: {userCode}");
-
-            var deadline = DateTimeOffset.UtcNow.AddSeconds(expiresIn);
+            var interval = dc.Interval;
+            var deadline = DateTimeOffset.UtcNow.AddSeconds(dc.ExpiresIn);
 
             while (DateTimeOffset.UtcNow < deadline)
             {
                 await Task.Delay(interval * 1000);
-                var poll = await ms.PollForTokenAsync(deviceCode);
+                var poll = await _core.Auth.PollForTokenAsync(dc.DeviceCode);
                 if (poll == null) continue;
 
-                var err = poll["error"]?.ToString();
-                if (string.IsNullOrEmpty(err))
+                if (poll.IsCompleted)
                 {
-                    var accessToken = poll["access_token"]?.ToString();
-                    var refreshToken = poll["refresh_token"]?.ToString();
-                    if (string.IsNullOrEmpty(accessToken))
+                    if (string.IsNullOrEmpty(poll.AccessToken))
                     {
                         Trace.TraceError("poll 响应缺少 access_token");
                         return;
                     }
 
                     Trace.TraceInformation("用户已授权，正在完成登录...");
-                    var result = await ms.CompleteLoginAsync(accessToken, refreshToken ?? "");
+                    var result = await _core.Auth.CompleteLoginAsync(poll.AccessToken, poll.RefreshToken ?? "");
                     _lastResult = result;
-                    if (result.Success)
-                    {
-                        Trace.TraceInformation($"认证成功: {result.Username} ({result.Uuid})");
-                        Trace.TraceInformation($"  AccessToken: {result.AccessToken?[..Math.Min(20, result.AccessToken?.Length ?? 0)]}...");
-                        Trace.TraceInformation($"  UserType:    {result.UserType}");
-                        Trace.TraceInformation($"  ExpiresAt:   {result.ExpiresAt?.ToString("O") ?? "(永不过期)"}");
-                    }
-                    else
-                    {
-                        Trace.TraceError($"认证失败: {result.ErrorMessage}");
-                    }
+                    ShowResult(result);
                     return;
                 }
 
-                if (err is "authorization_declined" or "expired_token")
+                if (!poll.IsPending)
                 {
-                    Trace.TraceError($"用户已拒绝或代码已过期: {err}");
+                    Trace.TraceError($"用户已拒绝或代码已过期: {poll.Error}");
                     return;
                 }
 
-                if (err == "slow_down")
+                if (poll.Error == "slow_down")
                     interval += 5;
             }
 
@@ -150,26 +144,26 @@ internal static class AuthCommands
 
     static void ValidateToken()
     {
-        if (_current == null) { Trace.TraceError("请先认证 (auth offline/yggdrasil/microsoft)"); return; }
+        if (_core == null) { Trace.TraceError("请先认证 (auth offline/yggdrasil/microsoft)"); return; }
         if (_lastResult?.AccessToken == null) { Trace.TraceError("没有缓存的 token，请先认证"); return; }
 
         FireAsync(async () =>
         {
             Trace.TraceInformation("验证 token...");
-            var valid = await _current.ValidateAsync(_lastResult.AccessToken);
+            var valid = await _core.Auth.ValidateAsync(_lastResult.AccessToken);
             Trace.TraceInformation($"token 状态: {(valid ? "有效" : "无效")}");
         });
     }
 
     static void InvalidateToken()
     {
-        if (_current == null) { Trace.TraceError("请先认证 (auth offline/yggdrasil/microsoft)"); return; }
+        if (_core == null) { Trace.TraceError("请先认证 (auth offline/yggdrasil/microsoft)"); return; }
         if (_lastResult?.AccessToken == null) { Trace.TraceError("没有缓存的 token，请先认证"); return; }
 
         FireAsync(async () =>
         {
             Trace.TraceInformation("吊销 token...");
-            await _current.InvalidateAsync(_lastResult.AccessToken);
+            await _core.Auth.InvalidateAsync(_lastResult.AccessToken);
             Trace.TraceInformation("token 已吊销");
         });
     }
@@ -180,18 +174,23 @@ internal static class AuthCommands
         {
             var result = await action();
             _lastResult = result;
-            if (result.Success)
-            {
-                Trace.TraceInformation($"认证成功: {result.Username} ({result.Uuid})");
-                Trace.TraceInformation($"  AccessToken: {result.AccessToken?[..Math.Min(20, result.AccessToken?.Length ?? 0)]}...");
-                Trace.TraceInformation($"  UserType:    {result.UserType}");
-                Trace.TraceInformation($"  ExpiresAt:   {result.ExpiresAt?.ToString("O") ?? "(永不过期)"}");
-            }
-            else
-            {
-                Trace.TraceError($"认证失败: {result.ErrorMessage}");
-            }
+            ShowResult(result);
         });
+    }
+
+    static void ShowResult(AuthResult result)
+    {
+        if (result.Success)
+        {
+            Trace.TraceInformation($"认证成功: {result.Username} ({result.Uuid})");
+            Trace.TraceInformation($"  AccessToken: {result.AccessToken?[..Math.Min(20, result.AccessToken?.Length ?? 0)]}...");
+            Trace.TraceInformation($"  UserType:    {result.UserType}");
+            Trace.TraceInformation($"  ExpiresAt:   {result.ExpiresAt?.ToString("O") ?? "(永不过期)"}");
+        }
+        else
+        {
+            Trace.TraceError($"认证失败: {result.ErrorMessage}");
+        }
     }
 
     static void FireAsync(Func<Task> action)
@@ -201,5 +200,12 @@ internal static class AuthCommands
             try { await action(); }
             catch (Exception ex) { Trace.TraceError($"操作失败: {ex.Message}"); }
         });
+    }
+
+    static void DisposeCore()
+    {
+        _core?.Dispose();
+        _core = null;
+        _lastResult = null;
     }
 }

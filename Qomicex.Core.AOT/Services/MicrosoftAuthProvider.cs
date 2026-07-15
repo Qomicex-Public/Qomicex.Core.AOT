@@ -16,12 +16,12 @@ internal sealed class MicrosoftAuthProvider : IAuthProvider
         _clientId = clientId;
     }
 
-    public async Task<AuthResult> AuthenticateAsync(AuthRequest request)
+    public Task<AuthResult> AuthenticateAsync(AuthRequest request)
     {
         if (string.IsNullOrEmpty(request.AccessToken))
-            return new AuthResult { Success = false, ErrorMessage = "需要 access_token（来自设备码流程）" };
+            return Task.FromResult(new AuthResult { Success = false, ErrorMessage = "需要 access_token（来自设备码流程）" });
 
-        return await CompleteLoginAsync(request.AccessToken, request.AccessToken);
+        return CompleteLoginAsync(request.AccessToken, request.AccessToken);
     }
 
     public async Task<bool> ValidateAsync(string accessToken)
@@ -44,7 +44,7 @@ internal sealed class MicrosoftAuthProvider : IAuthProvider
         return Task.CompletedTask;
     }
 
-    public async Task<JsonObject?> StartDeviceCodeAsync()
+    public async Task<DeviceCodeResult?> StartDeviceCodeAsync()
     {
         var form = new Dictionary<string, string>
         {
@@ -59,10 +59,22 @@ internal sealed class MicrosoftAuthProvider : IAuthProvider
         if (!resp.IsSuccessStatusCode)
             return null;
 
-        return JsonNode.Parse(body)?.AsObject();
+        var json = JsonNode.Parse(body)?.AsObject();
+        if (json == null) return null;
+
+        var deviceCode = json["device_code"]?.ToString();
+        var userCode = json["user_code"]?.ToString();
+        var verifyUri = json["verification_uri"]?.ToString();
+        var interval = json["interval"]?.GetValue<int>() ?? 5;
+        var expiresIn = json["expires_in"]?.GetValue<int>() ?? 900;
+
+        if (string.IsNullOrEmpty(deviceCode) || string.IsNullOrEmpty(userCode))
+            return null;
+
+        return new DeviceCodeResult(deviceCode, userCode, verifyUri ?? "", interval, expiresIn);
     }
 
-    public async Task<JsonObject?> PollForTokenAsync(string deviceCode)
+    public async Task<PollTokenResult?> PollForTokenAsync(string deviceCode)
     {
         var form = new Dictionary<string, string>
         {
@@ -74,7 +86,27 @@ internal sealed class MicrosoftAuthProvider : IAuthProvider
             "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
             new FormUrlEncodedContent(form));
         var body = await resp.Content.ReadAsStringAsync();
-        return JsonNode.Parse(body)?.AsObject();
+
+        var data = JsonNode.Parse(body)?.AsObject();
+        if (data == null)
+            return new PollTokenResult(null, null, "解析失败", false, true);
+
+        var err = data["error"]?.ToString();
+
+        if (string.IsNullOrEmpty(err))
+        {
+            var accessToken = data["access_token"]?.ToString();
+            var refreshToken = data["refresh_token"]?.ToString();
+            return new PollTokenResult(accessToken, refreshToken, null, true, false);
+        }
+
+        if (err is "authorization_declined" or "expired_token")
+            return new PollTokenResult(null, null, err, false, false);
+
+        if (err == "slow_down")
+            return new PollTokenResult(null, null, err, false, true);
+
+        return new PollTokenResult(null, null, err, false, true);
     }
 
     public async Task<AuthResult> CompleteLoginAsync(string accessToken, string refreshToken)
