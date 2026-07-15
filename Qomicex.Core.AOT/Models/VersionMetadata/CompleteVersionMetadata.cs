@@ -1,3 +1,4 @@
+using Qomicex.Core.AOT.Utils;
 using System.Text.Json.Serialization;
 
 namespace Qomicex.Core.AOT.Models.VersionMetadata;
@@ -14,10 +15,10 @@ public record CompleteVersionMetadata(
     [property: JsonPropertyName("jar")] string? Jar,
     [property: JsonPropertyName("arguments")] VersionArguments? Arguments,
     [property: JsonPropertyName("libraries")] List<Library> Libraries,
-    [property: JsonPropertyName("assetIndex")] AssetIndex AssetIndex,
-    [property: JsonPropertyName("downloads")] VersionDownloads Downloads,
+    [property: JsonPropertyName("assetIndex")] AssetIndex? AssetIndex,
+    [property: JsonPropertyName("downloads")] VersionDownloads? Downloads,
     [property: JsonPropertyName("javaVersion")] JavaVersion? JavaVersion,
     [property: JsonPropertyName("minimumLauncherVersion")] int? MinimumLauncherVersion,
-    [property: JsonPropertyName("releaseTime")] DateTime ReleaseTime,
-    [property: JsonPropertyName("time")] DateTime Time
+    [property: JsonPropertyName("releaseTime")][property: JsonConverter(typeof(MinecraftDateTimeConverter))] DateTimeOffset ReleaseTime,
+    [property: JsonPropertyName("time")][property: JsonConverter(typeof(MinecraftDateTimeConverter))] DateTimeOffset Time
 );

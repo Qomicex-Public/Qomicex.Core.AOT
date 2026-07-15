@@ -15,6 +15,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Qomicex.Core.AOT.Services
 {
@@ -284,25 +285,28 @@ namespace Qomicex.Core.AOT.Services
             var locator = new DefaultVersionLocator(_gameDir);
             var meta = locator.GetVersionMetadata(options.Version);
 
-            foreach (var lib in meta.Libraries)
+            if (meta?.Libraries is not null)
             {
-                if (lib.Rules is { Count: > 0 })
+                foreach (var lib in meta.Libraries)
                 {
-                    foreach (var rule in lib.Rules)
+                    if (lib.Rules is { Count: > 0 })
                     {
-                        if (LibHelper.IsRuleSuitable(rule))
+                        foreach (var rule in lib.Rules)
                         {
-                            if (LibHelper.IsNatives(lib))
-                                if (!LibList.Contains(lib))
-                                    LibList.Add(lib);
+                            if (LibHelper.IsRuleSuitable(rule))
+                            {
+                                if (LibHelper.IsNatives(lib))
+                                    if (!LibList.Contains(lib))
+                                        LibList.Add(lib);
+                            }
                         }
                     }
-                }
-                else
-                {
-                    if (LibHelper.IsNatives(lib))
-                        if (!LibList.Contains(lib))
-                            LibList.Add(lib);
+                    else
+                    {
+                        if (LibHelper.IsNatives(lib))
+                            if (!LibList.Contains(lib))
+                                LibList.Add(lib);
+                    }
                 }
             }
 
@@ -328,7 +332,7 @@ namespace Qomicex.Core.AOT.Services
 
             //处理参数
             // 获取 assetIndex
-            string assetsIndex = config!.AssetIndex.Id;
+            string assetsIndex = config?.AssetIndex?.Id ?? string.Empty;
             if(string.IsNullOrEmpty(assetsIndex))
             {
                 if (config!.InheritsFrom is null)
@@ -347,11 +351,38 @@ namespace Qomicex.Core.AOT.Services
             }
             //处理ClassPath
             var cpLibs = GetClassPath(options);
+
             string mainJarPath = Path.Combine(_gameDir, "versions", options.Version, $"{options.Version}.jar");
             if (!File.Exists(mainJarPath))
             {
-                mainJarPath = Path.Combine(_gameDir, "versions", config!.InheritsFrom, $"{config!.InheritsFrom}.jar");
+                bool skip = false;
+                var mainClass = GetMainClass(options).ToLower();
+                if (mainClass.Contains("bootstraplauncher.bootstrapper") || mainClass.Contains("bootstraplauncher.bootstraplauncher"))
+                {
+                    //为Forge/NeoForge版本
+                    if (assetsIndex.Contains('.'))
+                    {
+                        var indexs = assetsIndex.Split('.');
+                        if (indexs.Length >= 2 &&
+                        int.TryParse(System.Text.RegularExpressions.Regex.Match(indexs[1] ?? "", @"^\d+").Value,out var minor))
+                        {
+                            // >= 1.17
+                            skip = minor >= 17;
+                        }
+                    }
+                    else
+                    {
+                        if(assetsIndex.All(char.IsDigit))
+                        {
+                            // 22w42a+ 纯数字索引
+                            skip = true;
+                        }
+                    }
+                }
+                if (!skip)
+                    mainJarPath = Path.Combine(_gameDir, "versions", config!.InheritsFrom, $"{config!.InheritsFrom}.jar");
             }
+
             string cpLibsStr = "";
             var sb = new StringBuilder();
             foreach (var cp in cpLibs)
@@ -658,7 +689,7 @@ namespace Qomicex.Core.AOT.Services
             {
                 var inheritsFromOptions = options with { Version = config.InheritsFrom };
 
-                gameList.AddRange(GetJVMParams(inheritsFromOptions, false));
+                gameList.AddRange(GetGameParams(inheritsFromOptions));
             }
             if (config!.Arguments is null)
             {

@@ -3,7 +3,7 @@ namespace Qomicex.Core.AOT.Models.Local;
 public record LocalVersionInfo(
     string Id,
     List<ModloaderInfo> Type,
-    DateTime ReleaseTime,
+    DateTimeOffset ReleaseTime,
     bool IsComplete,
     string VersionPath,
     string VanillaVersion,

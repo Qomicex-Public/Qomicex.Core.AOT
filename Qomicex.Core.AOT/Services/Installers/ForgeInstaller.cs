@@ -77,15 +77,7 @@ public class ForgeInstaller : ForgeInstallerBase, IInstaller
 
         if (!string.IsNullOrEmpty(inheritsFromJson))
             jsonData = MergeVersionJson(inheritsFromJson, jsonData, versionId);
-        else
-        {
-            string jsonPath = Path.Combine(this.gameDir, "versions", this.gameVersion, $"{this.gameVersion}.json");
-            if (File.Exists(jsonPath))
-            {
-                string inheritsFromVerData = File.ReadAllText(jsonPath);
-                jsonData = MergeVersionJson(inheritsFromVerData, jsonData, versionId);
-            }
-        }
+
 
         var versionDir = Path.Combine(this.gameDir, "versions", versionId);
         if (!Directory.Exists(versionDir))
@@ -119,7 +111,10 @@ public class ForgeInstaller : ForgeInstallerBase, IInstaller
         string binPatchPath = $"\"{Path.Combine(this.gameDir, "libraries", "net", "minecraftforge", "forge", $"{this.gameVersion}-{versionId}", "client.lzma")}\"";
         installProfileJson["data"]!["BINPATCH"]!["client"] = binPatchPath;
 
-        var jarMavenPath = MavenToPath(installProfileJson["path"]?.ToString()!);
+        var path = installProfileJson["path"]?.ToString()!;
+        var jarMavenPath = string.Empty;
+        if (!string.IsNullOrEmpty(path))
+            jarMavenPath = MavenToPath(path);
         if (!string.IsNullOrEmpty(jarMavenPath))
         {
             var forgeJar = ReadSpecifyFileFromZip(forgeInstallerPath, $@"maven/{jarMavenPath}");
@@ -151,10 +146,15 @@ public class ForgeInstaller : ForgeInstallerBase, IInstaller
         var processors = installProfileJson["processors"] as JsonArray;
         if (processors != null && processors.Count > 0)
         {
+            Trace.WriteLine($"开始执行Processor后处理，共 {processors.Count} 个处理器");
             foreach (var processor in processors)
             {
                 var processorObj = processor!.AsObject();
-                if (!ShouldRunProcessor(processorObj, "client")) continue;
+
+                string processorJar = processorObj["jar"]?.ToString() ?? "未知";
+                Trace.WriteLine($"处理Processor: {processorJar}");
+
+                if (!ShouldRunProcessor(processorObj, "client")) continue; Trace.WriteLine("该Processor不适用于当前side=client，跳过执行");
                 try
                 {
                     await RunProcessor(installProfileJson, processorObj, versionId, this.gameDir, javaPath);
@@ -162,7 +162,7 @@ public class ForgeInstaller : ForgeInstallerBase, IInstaller
                 catch (Exception ex)
                 {
                     BackInstall(backFiles, backDirs);
-                    throw new Exception($"处理器执行失败: {processorObj["jar"]}\n{ex.Message}");
+                    throw new Exception($"处理器执行失败: {processorObj["jar"]}\n原因：{ex.Message}");
                 }
             }
         }
@@ -203,15 +203,6 @@ public class ForgeInstaller : ForgeInstallerBase, IInstaller
 
         if (!string.IsNullOrEmpty(inheritsFromJson))
             jsonData = MergeVersionJson(inheritsFromJson, jsonData, versionId);
-        else
-        {
-            string jsonPath = Path.Combine(this.gameDir, "versions", this.gameVersion, $"{this.gameVersion}.json");
-            if (File.Exists(jsonPath))
-            {
-                string inheritsFromVerData = File.ReadAllText(jsonPath);
-                jsonData = MergeVersionJson(inheritsFromVerData, jsonData, versionId);
-            }
-        }
 
         var versionDir = Path.Combine(this.gameDir, "versions", versionId);
         if (!Directory.Exists(versionDir))

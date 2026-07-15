@@ -190,12 +190,7 @@ internal sealed class Program
                 else CoreCommands.EnsureCore();
                 break;
 
-            case "install-fabric":
-            case "install-forge":
-            case "install-neoforge":
-            case "install-quilt":
-            case "install-litelloader":
-            case "install-optifine":
+            case "install-loader":
                 if (CoreCommands.IsInitialized)
                     InstallerCommands.Execute(args);
                 else CoreCommands.EnsureCore();
@@ -363,12 +358,12 @@ internal sealed class Program
             ("expansion ftb info <id>", "FTB 整合包详情"),
             ("expansion mods list <ver> [--segmented]", "列出本地模组"),
             ("", ""),
-            ("install-fabric <vid> <gv> <fv>", "安装 Fabric 加载器"),
-            ("install-forge <vid> <gv> <path> <java>", "安装 Forge 加载器"),
-            ("install-neoforge <vid> <gv> <path> <java>", "安装 NeoForge 加载器"),
-            ("install-quilt <vid> <gv> <qv>", "安装 Quilt 加载器"),
-            ("install-litelloader <vid> <gv> <lv>", "安装 LiteLoader"),
-            ("install-optifine <vid> <gv> <tp> <path> <java>", "安装 OptiFine"),
+            ("install-loader fabric <vid> <gv> <fv>", "安装 Fabric 加载器"),
+            ("install-loader forge <vid> <gv> <path> <java>", "安装 Forge 加载器"),
+            ("install-loader neoforge <vid> <gv> <path> <java>", "安装 NeoForge 加载器"),
+            ("install-loader quilt <vid> <gv> <qv>", "安装 Quilt 加载器"),
+            ("install-loader litelloader <vid> <gv> <lv>", "安装 LiteLoader"),
+            ("install-loader optifine <vid> <gv> <tp> <path> <java>", "安装 OptiFine"),
             ("", ""),
             ("clear / cls", "清屏"),
             ("exit / quit / q", "退出"),

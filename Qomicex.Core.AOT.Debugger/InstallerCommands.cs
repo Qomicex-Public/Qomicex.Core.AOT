@@ -17,17 +17,17 @@ internal static class InstallerCommands
 
         switch (cmd)
         {
-            case "install-fabric":
+            case "fabric":
                 return FabricCmd(rest);
-            case "install-forge":
+            case "forge":
                 return ForgeCmd(rest);
-            case "install-neoforge":
+            case "neoforge":
                 return NeoForgeCmd(rest);
-            case "install-quilt":
+            case "quilt":
                 return QuiltCmd(rest);
-            case "install-litelloader":
+            case "litelloader":
                 return LiteLoaderCmd(rest);
-            case "install-optifine":
+            case "optifine":
                 return OptiFineCmd(rest);
             default:
                 return false;
@@ -42,12 +42,12 @@ internal static class InstallerCommands
 
         var cmds = new (string Cmd, string Desc)[]
         {
-            ("install-fabric <vid> <gv> <fv>", "安装 Fabric: vid=版本ID, gv=游戏版本, fv=Fabric版本"),
-            ("install-forge <vid> <gv> <path> <java>", "安装 Forge: path=安装器路径, java=java路径"),
-            ("install-neoforge <vid> <gv> <path> <java>", "安装 NeoForge"),
-            ("install-quilt <vid> <gv> <qv>", "安装 Quilt"),
-            ("install-litelloader <vid> <gv> <lv>", "安装 LiteLoader"),
-            ("install-optifine <vid> <gv> <type-patch> <path> <java>", "安装 OptiFine"),
+            ("install-loader loader fabric <vid> <gv> <fv>", "安装 Fabric: vid=版本ID, gv=游戏版本, fv=Fabric版本"),
+            ("install-loader forge <vid> <gv> <path> <java>", "安装 Forge: path=安装器路径, java=java路径"),
+            ("install-loader neoforge <vid> <gv> <path> <java>", "安装 NeoForge"),
+            ("install-loader quilt <vid> <gv> <qv>", "安装 Quilt"),
+            ("install-loader litelloader <vid> <gv> <lv>", "安装 LiteLoader"),
+            ("install-loader optifine <vid> <gv> <type-patch> <path> <java>", "安装 OptiFine"),
         };
 
         foreach (var (c, d) in cmds)
@@ -62,7 +62,7 @@ internal static class InstallerCommands
 
     static bool FabricCmd(string[] args)
     {
-        if (args.Length < 3) { Trace.TraceError("用法: install-fabric <vid> <gv> <fv>"); return true; }
+        if (args.Length < 3) { Trace.TraceError("用法: install-loader loader fabric <vid> <gv> <fv>"); return true; }
         var (vid, gv, fv) = (args[0], args[1], args[2]);
 
         FireAsync(async () =>
@@ -76,7 +76,7 @@ internal static class InstallerCommands
 
     static bool ForgeCmd(string[] args)
     {
-        if (args.Length < 4) { Trace.TraceError("用法: install-forge <vid> <gv> <path> <java>"); return true; }
+        if (args.Length < 4) { Trace.TraceError("用法: install-loader forge <vid> <gv> <path> <java>"); return true; }
         var (vid, gv, path, java) = (args[0], args[1], args[2], args[3]);
 
         FireAsync(async () =>
@@ -90,7 +90,7 @@ internal static class InstallerCommands
 
     static bool NeoForgeCmd(string[] args)
     {
-        if (args.Length < 4) { Trace.TraceError("用法: install-neoforge <vid> <gv> <path> <java>"); return true; }
+        if (args.Length < 4) { Trace.TraceError("用法: install-loader neoforge <vid> <gv> <path> <java>"); return true; }
         var (vid, gv, path, java) = (args[0], args[1], args[2], args[3]);
 
         FireAsync(async () =>
@@ -104,7 +104,7 @@ internal static class InstallerCommands
 
     static bool QuiltCmd(string[] args)
     {
-        if (args.Length < 3) { Trace.TraceError("用法: install-quilt <vid> <gv> <qv>"); return true; }
+        if (args.Length < 3) { Trace.TraceError("用法: install-loader quilt <vid> <gv> <qv>"); return true; }
         var (vid, gv, qv) = (args[0], args[1], args[2]);
 
         FireAsync(async () =>
@@ -118,7 +118,7 @@ internal static class InstallerCommands
 
     static bool LiteLoaderCmd(string[] args)
     {
-        if (args.Length < 3) { Trace.TraceError("用法: install-litelloader <vid> <gv> <lv>"); return true; }
+        if (args.Length < 3) { Trace.TraceError("用法: install-loader litelloader <vid> <gv> <lv>"); return true; }
         var (vid, gv, lv) = (args[0], args[1], args[2]);
 
         FireAsync(async () =>
@@ -132,7 +132,7 @@ internal static class InstallerCommands
 
     static bool OptiFineCmd(string[] args)
     {
-        if (args.Length < 5) { Trace.TraceError("用法: install-optifine <vid> <gv> <type-patch> <path> <java>"); return true; }
+        if (args.Length < 5) { Trace.TraceError("用法: install-loader optifine <vid> <gv> <type-patch> <path> <java>"); return true; }
         var (vid, gv, tp, path, java) = (args[0], args[1], args[2], args[3], args[4]);
 
         FireAsync(async () =>

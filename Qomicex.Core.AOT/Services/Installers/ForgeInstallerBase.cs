@@ -96,8 +96,11 @@ public class ForgeInstallerBase : InstallerBase
             throw new Exception($"无法获取Jar主类: {jarPath}");
 
         string command = $"-cp \"{cps}{separator}{jarPath}\" {mainClass} {args}";
-        if (RunInstallProcess(command, javaPath) != 0)
-            throw new Exception($"Processor执行失败，命令: {javaPath} {command}");
+        var exitCode = RunInstallProcess(command, javaPath);
+        //string command = $"\"{javaPath}\" -cp \"{cps}{separator}{jarPath}\" {mainClass} {args}";
+        //var exitCode = RunInstallProcess(command, null);
+        if (exitCode != 0)
+            throw new Exception($"Processor执行失败，命令: {javaPath} {command}\nExit code:{exitCode}");
 
         outputPaths = ReplaceOutputs(ipObj, processor, gameDir);
         foreach (var output in outputPaths)
