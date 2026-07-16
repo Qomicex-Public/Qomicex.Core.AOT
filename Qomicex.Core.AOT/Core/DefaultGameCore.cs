@@ -34,6 +34,7 @@ public sealed class DefaultGameCore : IDisposable
         Auth = auth;
         Launch = launch;
         JavaProvider = java;
+        InstallerProvider = installerProvider;
         HttpClient = http;
         GameRoot = gameRoot;
         _http = http;
