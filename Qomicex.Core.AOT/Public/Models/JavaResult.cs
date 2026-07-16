@@ -44,4 +44,43 @@ namespace Qomicex.Core.AOT.Public.Models
         JDK,
         JRE
     }
+    public enum DownloadSource
+    {
+        BMCLAPI,
+        Adoptium,
+        Zulu
+    }
+
+    public enum JavaPlatform
+    {
+        Windows,
+        Linux,
+        MacOS
+    }
+
+    public enum JavaArchitecture
+    {
+        X64,
+        Arm64
+    }
+
+    public enum JavaPackageType
+    {
+        JRE,
+        JDK
+    }
+    public record JavaPackageInfo
+    {
+        public int MajorVersion { get; set; }
+        public string FullVersion { get; set; } = string.Empty;
+        public string Build { get; set; } = string.Empty;
+        public JavaPlatform Platform { get; set; }
+        public JavaArchitecture Architecture { get; set; }
+        public JavaPackageType PackageType { get; set; }
+        public DownloadSource Source { get; set; }
+        public string FileName { get; set; } = string.Empty;
+        public string DownloadUrl { get; set; } = string.Empty;
+        public string Sha256 { get; set; } = string.Empty;
+        public long? Size { get; set; }
+    }
 }

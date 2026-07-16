@@ -10,5 +10,11 @@ namespace Qomicex.Core.AOT.Public.Services
     {
         Task<List<JavaResult>> Search(JavaSearchOptions options);
         Task<JavaResult> Recommand(List<JavaResult> javaResults, CompleteVersionMetadata metadata);
+        bool Check(JavaResult java, CompleteVersionMetadata metadata);
+        Task<List<JavaPackageInfo>> GetPackages(int majorVersion,
+            JavaPlatform platform,
+            JavaArchitecture architecture,
+            JavaPackageType packageType,
+            DownloadSource source = DownloadSource.Adoptium);
     }
 }

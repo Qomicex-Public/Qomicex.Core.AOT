@@ -116,7 +116,7 @@ public sealed class GameCoreBuilder
         var version = _version ?? new VersionManagementService(_options.GameRoot, http, downloadSource);
         var auth = _auth ?? CreateAuthProvider(http);
         var launch = _launch ?? new LaunchExecutor(_options.LauncherName, _options.GameRoot);
-        var javaProvider = _javaProvider ?? new JavaProvider();
+        var javaProvider = _javaProvider ?? new JavaProvider(http);
         var installerProvider = _installerProvider ?? new InstallerProvider(http,_options.DownloadMirror);
 
         return new DefaultGameCore(version, auth, launch,javaProvider,installerProvider, http, _options.GameRoot);

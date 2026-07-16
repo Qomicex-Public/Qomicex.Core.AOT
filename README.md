@@ -48,6 +48,7 @@ Native AOT 应用程序启动极快、内存占用极少，用户无需安装 .N
 | 原生进程启动 | ✅ |
 | JVM 参数自动组装 | ✅ |
 | Java 运行时检测与推荐 | ✅ |
+| Java 在线下载（Adoptium / Zulu / BMCLAPI） | ✅ |
 | 注册表 / 环境变量 / PATH / 多源扫描 | ✅ |
 | Forge 安装（Legacy + New） | ✅ |
 | NeoForge 安装 | ✅ |
@@ -149,6 +150,17 @@ var javaList = await core.JavaProvider.SearchAsync(new JavaSearchOptions
 });
 
 var recommended = await core.JavaProvider.Recommand(javaList, metadata);
+```
+
+**Java 在线下载：**
+
+```csharp
+var packages = await core.JavaProvider.GetPackages(
+    majorVersion: 21,
+    platform: JavaPlatform.Windows,
+    architecture: JavaArchitecture.X64,
+    packageType: JavaPackageType.JDK,
+    source: DownloadSource.Adoptium);
 ```
 
 ### ModLoader 版本查询与安装
