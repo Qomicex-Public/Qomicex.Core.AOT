@@ -2,7 +2,9 @@
 using Qomicex.Core.AOT.Interfaces;
 using Qomicex.Core.AOT.Interfaces.Core;
 using Qomicex.Core.AOT.Interfaces.Services;
+using Qomicex.Core.AOT.Public.Services;
 using Qomicex.Core.AOT.Services;
+using Qomicex.Core.AOT.Services.Expansion;
 using Qomicex.Core.AOT.Services.Installers;
 
 namespace Qomicex.Core.AOT.Builder;
@@ -15,6 +17,7 @@ public sealed class GameCoreBuilder
     private ILaunchExecutor? _launch;
     private HttpClient? _http;
     private IDownloadSourceManager? _source;
+    private IJavaProvider? _javaProvider;
 
     public GameCoreBuilder Configure(Action<CoreOptions> configure)
     {
@@ -91,6 +94,12 @@ public sealed class GameCoreBuilder
         return this;
     }
 
+    public GameCoreBuilder WithJavaProvider(IJavaProvider javaProvider)
+    {
+        _javaProvider = javaProvider;
+        return this;
+    }
+
     public DefaultGameCore Build()
     {
         var http = _http ?? new HttpClient();
@@ -100,8 +109,9 @@ public sealed class GameCoreBuilder
         var version = _version ?? new VersionManagementService(_options.GameRoot, http, downloadSource);
         var auth = _auth ?? CreateAuthProvider(http);
         var launch = _launch ?? new LaunchExecutor(_options.LauncherName, _options.GameRoot);
+        var javaProvider = _javaProvider ?? new JavaProvider();
 
-        return new DefaultGameCore(version, auth, launch, http, _options.GameRoot);
+        return new DefaultGameCore(version, auth, launch,javaProvider, http, _options.GameRoot);
     }
 
     private IAuthProvider CreateAuthProvider(HttpClient http)

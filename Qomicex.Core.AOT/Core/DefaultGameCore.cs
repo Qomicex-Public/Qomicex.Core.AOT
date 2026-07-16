@@ -1,6 +1,7 @@
 using Qomicex.Core.AOT.Interfaces;
 using Qomicex.Core.AOT.Interfaces.Services;
 using Qomicex.Core.AOT.Public.Expansion;
+using Qomicex.Core.AOT.Public.Services;
 using Qomicex.Core.AOT.Services.Expansion.CurseForge;
 using Qomicex.Core.AOT.Services.Expansion.FeedTheBeast;
 using Qomicex.Core.AOT.Services.Expansion.Modrinth;
@@ -17,17 +18,20 @@ public sealed class DefaultGameCore : IDisposable
     public IVersionManagementService Version { get; }
     public IAuthProvider Auth { get; }
     public ILaunchExecutor Launch { get; }
+    public IJavaProvider JavaProvider { get; }
 
     internal DefaultGameCore(
         IVersionManagementService version,
         IAuthProvider auth,
         ILaunchExecutor launch,
+        IJavaProvider java,
         HttpClient http,
         string gameRoot)
     {
         Version = version;
         Auth = auth;
         Launch = launch;
+        JavaProvider = java;
         HttpClient = http;
         GameRoot = gameRoot;
         _http = http;
