@@ -20,7 +20,7 @@ public sealed record class AuthOptions
     public string? Uuid { get; set; }
     public string? Name { get; set; } = "Player";
     public string? Token { get; set; }
-    public string? AccessToken { get; set; }
+    public string? AccessToken { get; set; } = "0";
     public string? RefreshToken { get; set; }
     public string? ServerUrl { get; set; }
     public string? AuthlibInjectorParam { get; set; }
