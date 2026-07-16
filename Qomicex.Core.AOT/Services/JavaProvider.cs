@@ -11,9 +11,9 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
 
-namespace Qomicex.Core.AOT.Services.Expansion
+namespace Qomicex.Core.AOT.Services
 {
-    internal class JavaProvider : IJavaProvider
+    internal sealed class JavaProvider : IJavaProvider
     {
         #region 排除列表和路径常量
         private static readonly HashSet<string> ExcludedPaths = new(StringComparer.OrdinalIgnoreCase)

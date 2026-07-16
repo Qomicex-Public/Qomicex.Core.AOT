@@ -19,12 +19,14 @@ public sealed class DefaultGameCore : IDisposable
     public IAuthProvider Auth { get; }
     public ILaunchExecutor Launch { get; }
     public IJavaProvider JavaProvider { get; }
+    public IInstallerProvider InstallerProvider { get; }
 
     internal DefaultGameCore(
         IVersionManagementService version,
         IAuthProvider auth,
         ILaunchExecutor launch,
         IJavaProvider java,
+        IInstallerProvider installerProvider,
         HttpClient http,
         string gameRoot)
     {

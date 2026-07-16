@@ -18,6 +18,7 @@ public sealed class GameCoreBuilder
     private HttpClient? _http;
     private IDownloadSourceManager? _source;
     private IJavaProvider? _javaProvider;
+    private IInstallerProvider? _installerProvider;
 
     public GameCoreBuilder Configure(Action<CoreOptions> configure)
     {
@@ -100,6 +101,12 @@ public sealed class GameCoreBuilder
         return this;
     }
 
+    public GameCoreBuilder WithInstallerProvider(IInstallerProvider installerProvider)
+    {
+        _installerProvider = installerProvider;
+        return this;
+    }
+
     public DefaultGameCore Build()
     {
         var http = _http ?? new HttpClient();
@@ -110,8 +117,9 @@ public sealed class GameCoreBuilder
         var auth = _auth ?? CreateAuthProvider(http);
         var launch = _launch ?? new LaunchExecutor(_options.LauncherName, _options.GameRoot);
         var javaProvider = _javaProvider ?? new JavaProvider();
+        var installerProvider = _installerProvider ?? new InstallerProvider(http,_options.DownloadMirror);
 
-        return new DefaultGameCore(version, auth, launch,javaProvider, http, _options.GameRoot);
+        return new DefaultGameCore(version, auth, launch,javaProvider,installerProvider, http, _options.GameRoot);
     }
 
     private IAuthProvider CreateAuthProvider(HttpClient http)
