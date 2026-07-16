@@ -243,14 +243,33 @@ public abstract class InstallerBase
         return string.Empty;
     }
 
-    internal static int RunInstallProcess(string arguments, string? program = null)
+    internal int RunInstallProcess(string arguments, string program)
     {
-        var isWindows = OperatingSystem.IsWindows();
-        program ??= isWindows ? "cmd.exe" : (File.Exists("/bin/bash") ? "/bin/bash" : "/bin/sh");
-
         using var process = new Process();
+
+        // 判断平台
+        bool isWindows = OperatingSystem.IsWindows();
+        bool isLinux = OperatingSystem.IsLinux();
+        bool isMacOS = OperatingSystem.IsMacOS();
+
+        if (program == null)
+        {
+            // 默认执行 shell
+            program = isWindows ? "cmd.exe" : (File.Exists("/bin/bash") ? "/bin/bash" : "/bin/sh");
+        }
+
         process.StartInfo.FileName = program;
-        process.StartInfo.Arguments = isWindows && program == "cmd.exe" ? $"/c {arguments}" : $"-c \"{arguments}\"";
+
+        if (isWindows)
+        {
+            process.StartInfo.Arguments = program == "cmd.exe" ? $"/c {arguments}" : arguments;
+        }
+        else
+        {
+            // Linux/macOS 用 -c
+            process.StartInfo.Arguments = program == "/bin/bash" ? $"-c \"{arguments}\"" : arguments;
+        }
+
         process.StartInfo.UseShellExecute = false;
         process.StartInfo.RedirectStandardOutput = true;
         process.StartInfo.RedirectStandardError = true;
@@ -260,6 +279,7 @@ public abstract class InstallerBase
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         process.WaitForExit();
+
         return process.ExitCode;
     }
 

@@ -129,7 +129,7 @@ internal class DefaultVersionLocator : IVersionLocator
         }
     }
    
-    private string GetVanillaVersion(CompleteVersionMetadata meta,string versionId)
+    internal string GetVanillaVersion(CompleteVersionMetadata meta,string versionId)
     {
         //从jar读版本
         var version = GameVersionHelper.FromJar(GetJarPath(versionId, meta));

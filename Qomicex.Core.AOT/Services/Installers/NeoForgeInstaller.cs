@@ -69,15 +69,6 @@ public class NeoForgeInstaller : ForgeInstallerBase, IInstaller
 
         if (!string.IsNullOrEmpty(inheritsFromJson))
             jsonData = MergeVersionJson(inheritsFromJson, jsonData, versionId);
-        else
-        {
-            string jsonPath = Path.Combine(this.gameDir, "versions", this.gameVersion, $"{this.gameVersion}.json");
-            if (File.Exists(jsonPath))
-            {
-                string inheritsFromVerData = File.ReadAllText(jsonPath);
-                jsonData = MergeVersionJson(inheritsFromVerData, jsonData, versionId);
-            }
-        }
 
         var versionDir = Path.Combine(this.gameDir, "versions", versionId);
         if (!Directory.Exists(versionDir))

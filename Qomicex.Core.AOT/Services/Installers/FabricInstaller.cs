@@ -33,11 +33,6 @@ public class FabricInstaller : InstallerBase, IInstaller
 
         if (!string.IsNullOrEmpty(inheritsFromJson))
             jsonData = MergeVersionJson(inheritsFromJson, jsonData, versionId);
-        else if (File.Exists(Path.Combine(_gameDir, "versions", gameVersion, $"{gameVersion}.json")))
-        {
-            var mainVersionJson = await File.ReadAllTextAsync(Path.Combine(_gameDir, "versions", gameVersion, $"{gameVersion}.json"));
-            jsonData = MergeVersionJson(mainVersionJson, jsonData, versionId);
-        }
         else
             throw new Exception("主版本JSON文件不存在");
 

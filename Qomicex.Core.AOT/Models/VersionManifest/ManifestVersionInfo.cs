@@ -1,3 +1,4 @@
+using Qomicex.Core.AOT.Utils;
 using System.Text.Json.Serialization;
 
 namespace Qomicex.Core.AOT.Models.VersionManifest;
@@ -9,6 +10,6 @@ public record ManifestVersionInfo(
     [property: JsonPropertyName("id")] string Id,
     [property: JsonPropertyName("type")] string Type,
     [property: JsonPropertyName("url")] string Url,
-    [property: JsonPropertyName("time")] DateTime Time,
-    [property: JsonPropertyName("releaseTime")] DateTime ReleaseTime
+    [property: JsonPropertyName("time")][property: JsonConverter(typeof(MinecraftDateTimeConverter))] DateTimeOffset Time,
+    [property: JsonPropertyName("releaseTime")][property: JsonConverter(typeof(MinecraftDateTimeConverter))] DateTimeOffset ReleaseTime
 );
