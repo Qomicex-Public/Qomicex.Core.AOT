@@ -80,6 +80,8 @@ internal class DefaultResourceCompleter : IResourceCompleter
 
     private async Task DownloadArtifactAsync(Artifact artifact, IProgress<DownloadProgress>? progress)
     {
+        if (string.IsNullOrEmpty(artifact.Path))
+            return;
         var localPath = Path.Combine(_gameRootPath, "libraries", artifact.Path);
         var directory = Path.GetDirectoryName(localPath);
         if (!string.IsNullOrEmpty(directory))
