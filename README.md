@@ -1,11 +1,13 @@
 # Qomicex.Core.AOT
 
-![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&style=for-the-badge)
+![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=for-the-badge&logo=dotnet)
 ![AOT](https://img.shields.io/badge/AOT-✓-brightgreen?style=for-the-badge)
 ![NuGet](https://img.shields.io/badge/NuGet-v1.0.0-004880?logo=nuget&style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
+![License](https://img.shields.io/badge/License-GPL%20V3-yellow?style=for-the-badge&logo=gnu)
 
 以 C# 写就的下一代 Minecraft 启动核心，全栈 Native AOT 编译，提供最轻量、快速和完整的开发体验。
+
+> 本仓库是 [Qomicex-Public](https://github.com/Qomicex-Public) 组织下的独立仓库，是 [Qomicex.Core](https://github.com/Qomicex-Public/Qomicex.Core) 的 **Native AOT 重构版本**。新版核心将逐步接入 [Qomicex.Tauri](https://github.com/Qomicex-Public/Qomicex.Tauri) 启动器，直至替换原核心。
 
 零外部 NuGet 依赖（仅 Tomlyn 用于 TOML 解析），全链路覆盖：**认证 → 版本管理 → ModLoader 安装 → 资源下载 → 游戏启动 → 扩展平台**。
 
@@ -319,6 +321,21 @@ Qomicex.Core.AOT/
 
 Qomicex.Core.AOT 不隶属于 Mojang Studios 或 Microsoft 及其附属软件的任何一部分。
 
-## 协议
+## 许可证
 
-MIT。可以任何目的修改和使用本项目的代码，但必须保留版权声明和许可声明。
+本项目基于 [GNU General Public License v3.0](./LICENSE) 授权。
+
+## 相关项目
+
+| 项目 | 说明 |
+| --- | --- |
+| [Qomicex.Core](https://github.com/Qomicex-Public/Qomicex.Core) | 旧版核心库（非 AOT），本项目的上游 |
+| [Qomicex.Tauri](https://github.com/Qomicex-Public/Qomicex.Tauri) | Qomicex 启动器主体（Tauri + React），消费本核心 |
+
+## 反馈与参与
+
+欢迎提交 Issue 或 PR 以修正 bug 并完善代码。
+
+## 免责声明
+
+Qomicex.Core.AOT 不隶属于 Mojang Studios 或 Microsoft 及其附属软件的任何一部分。

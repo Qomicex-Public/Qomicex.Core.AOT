@@ -5,7 +5,7 @@ using Qomicex.Core.AOT.Models.VersionMetadata;
 
 namespace Qomicex.Core.AOT.JsonConverters;
 
-internal class VersionArgumentsConverter : JsonConverter<VersionArguments>
+public class VersionArgumentsConverter : JsonConverter<VersionArguments>
 {
     private static readonly VersionMetadataJsonContext Ctx = VersionMetadataJsonContext.Default;
 

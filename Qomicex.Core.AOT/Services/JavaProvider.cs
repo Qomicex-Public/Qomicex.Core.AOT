@@ -107,7 +107,69 @@ namespace Qomicex.Core.AOT.Services
             "/usr/libexec/java_home"
         };
         #endregion
-        public Task<List<JavaResult>> Search(JavaSearchOptions options)
+        public Task<List<JavaResult>> Search(JavaSearchOptions? options = null)
+        {
+            if (options.Mode == JavaSearchMode.Custom && string.IsNullOrEmpty(options.CustomRootPath))
+            {
+                throw new ArgumentException("Custom模式必须提供CustomRootPath");
+            }
+
+            return options.Mode switch
+            {
+                JavaSearchMode.Quick => SearchQuick(options),
+                JavaSearchMode.Deep => SearchDeep(options),
+                JavaSearchMode.Custom => SearchCustom(options),
+                _ => throw new ArgumentOutOfRangeException()
+            };
+        }
+        private Task<List<JavaResult>> SearchQuick(JavaSearchOptions options)
+        {
+            var results = new ConcurrentBag<JavaResult>();
+            var discoveredPaths = new ConcurrentDictionary<string, bool>();
+
+            SearchEnvironmentVariables(results, discoveredPaths, options);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                SearchRegistry(results, discoveredPaths, options);
+
+            SearchHighPriorityPaths(results, discoveredPaths, options);
+
+            if (!string.IsNullOrEmpty(options.GameDir))
+                SearchMinecraftRuntime(options.GameDir, results, discoveredPaths, options);
+
+            SearchPathEnvironment(results, discoveredPaths, options);
+
+            return Task.FromResult(ProcessResults(results, options));
+        }
+
+        private Task<List<JavaResult>> SearchDeep(JavaSearchOptions options)
+        {
+            var results = new ConcurrentBag<JavaResult>();
+            var discoveredPaths = new ConcurrentDictionary<string, bool>();
+
+            var quickResults = SearchQuick(options).Result;
+            foreach (var java in quickResults)
+            {
+                discoveredPaths[Path.GetFullPath(java.Path)] = true;
+                results.Add(java);
+            }
+
+            var drives = GetValidDrives(options.IncludeNetworkDrives);
+            Parallel.ForEach(drives, new ParallelOptions { MaxDegreeOfParallelism = 4 }, drive =>
+            {
+                try
+                {
+                    BreadthFirstSearch(drive, results, discoveredPaths, options, ExcludedPaths);
+                }
+                catch (Exception ex)
+                {
+                    Trace.WriteLine($"扫描驱动器 {drive} 失败: {ex.Message}");
+                }
+            });
+
+            return Task.FromResult(ProcessResults(results, options));
+        }
+        private Task<List<JavaResult>> SearchCustom(JavaSearchOptions options)
         {
             if (options.Mode == JavaSearchMode.Custom && string.IsNullOrEmpty(options.CustomRootPath))
             {
