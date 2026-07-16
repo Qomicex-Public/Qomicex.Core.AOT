@@ -179,16 +179,16 @@ namespace Qomicex.Core.AOT.Services
             JavaPlatform platform,
             JavaArchitecture architecture,
             JavaPackageType packageType,
-            DownloadSource source = DownloadSource.Adoptium)
+            JavaDownloadSource source = JavaDownloadSource.Adoptium)
         {
             if (majorVersion <= 0)
                 throw new ArgumentException("Java major version must be greater than 0.", nameof(majorVersion));
 
             var result = source switch
             {
-                DownloadSource.Adoptium => await GetLatestFromAdoptiumAsync(majorVersion, platform, architecture, packageType),
-                DownloadSource.Zulu => await GetLatestFromZuluAsync(majorVersion, platform, architecture, packageType),
-                DownloadSource.BMCLAPI => await GetLatestFromBmclapiAsync(majorVersion, platform, architecture, packageType),
+                JavaDownloadSource.Adoptium => await GetLatestFromAdoptiumAsync(majorVersion, platform, architecture, packageType),
+                JavaDownloadSource.Zulu => await GetLatestFromZuluAsync(majorVersion, platform, architecture, packageType),
+                JavaDownloadSource.BMCLAPI => await GetLatestFromBmclapiAsync(majorVersion, platform, architecture, packageType),
                 _ => throw new ArgumentException($"Unsupported Java download source: {source}.", nameof(source))
             };
 
@@ -248,7 +248,7 @@ namespace Qomicex.Core.AOT.Services
                 Platform = platform,
                 Architecture = architecture,
                 PackageType = packageType,
-                Source = DownloadSource.Adoptium,
+                Source = JavaDownloadSource.Adoptium,
                 FileName = asset["binary"]?["package"]?["name"]?.ToString() ?? string.Empty,
                 DownloadUrl = asset["binary"]?["package"]?["link"]?.ToString() ?? string.Empty,
                 Sha256 = asset["binary"]?["package"]?["checksum"]?.ToString() ?? string.Empty,
@@ -392,7 +392,7 @@ namespace Qomicex.Core.AOT.Services
                 Platform = platform,
                 Architecture = architecture,
                 PackageType = packageType,
-                Source = DownloadSource.Zulu,
+                Source = JavaDownloadSource.Zulu,
                 FileName = matched["name"]?.ToString() ?? string.Empty,
                 DownloadUrl = matched["download_url"]?.ToString() ?? string.Empty,
                 Sha256 = string.Empty,
@@ -919,7 +919,7 @@ namespace Qomicex.Core.AOT.Services
                 }
                 javaInfo = javaInfo with { Type = JavaType.JDK ,State = JavaState.Valid };
             }
-            catch (Exception ex)
+            catch
             {
                 javaInfo = javaInfo with { State = JavaState.CorruptedReleaseFile };
                 TryGetVersionFromCommand(javaInfo);

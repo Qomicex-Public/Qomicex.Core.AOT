@@ -44,7 +44,7 @@ namespace Qomicex.Core.AOT.Public.Models
         JDK,
         JRE
     }
-    public enum DownloadSource
+    public enum JavaDownloadSource
     {
         BMCLAPI,
         Adoptium,
@@ -77,7 +77,7 @@ namespace Qomicex.Core.AOT.Public.Models
         public JavaPlatform Platform { get; set; }
         public JavaArchitecture Architecture { get; set; }
         public JavaPackageType PackageType { get; set; }
-        public DownloadSource Source { get; set; }
+        public JavaDownloadSource Source { get; set; }
         public string FileName { get; set; } = string.Empty;
         public string DownloadUrl { get; set; } = string.Empty;
         public string Sha256 { get; set; } = string.Empty;

@@ -15,6 +15,6 @@ namespace Qomicex.Core.AOT.Public.Services
             JavaPlatform platform,
             JavaArchitecture architecture,
             JavaPackageType packageType,
-            DownloadSource source = DownloadSource.Adoptium);
+            JavaDownloadSource source = JavaDownloadSource.Adoptium);
     }
 }

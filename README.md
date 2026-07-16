@@ -160,7 +160,7 @@ var packages = await core.JavaProvider.GetPackages(
     platform: JavaPlatform.Windows,
     architecture: JavaArchitecture.X64,
     packageType: JavaPackageType.JDK,
-    source: DownloadSource.Adoptium);
+    source: JavaDownloadSource.Adoptium);
 ```
 
 ### ModLoader 版本查询与安装
