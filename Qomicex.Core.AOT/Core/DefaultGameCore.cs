@@ -1,4 +1,5 @@
 using Qomicex.Core.AOT.Interfaces;
+using Qomicex.Core.AOT.Interfaces.Core;
 using Qomicex.Core.AOT.Interfaces.Services;
 using Qomicex.Core.AOT.Public.Expansion;
 using Qomicex.Core.AOT.Public.Services;
@@ -20,6 +21,7 @@ public sealed class DefaultGameCore : IDisposable
     public ILaunchExecutor Launch { get; }
     public IJavaProvider JavaProvider { get; }
     public IInstallerProvider InstallerProvider { get; }
+    public IVersionLocator Locator { get; }
 
     internal DefaultGameCore(
         IVersionManagementService version,
@@ -27,6 +29,7 @@ public sealed class DefaultGameCore : IDisposable
         ILaunchExecutor launch,
         IJavaProvider java,
         IInstallerProvider installerProvider,
+        IVersionLocator locator,
         HttpClient http,
         string gameRoot)
     {
@@ -34,6 +37,7 @@ public sealed class DefaultGameCore : IDisposable
         Auth = auth;
         Launch = launch;
         JavaProvider = java;
+        Locator = locator;
         HttpClient = http;
         GameRoot = gameRoot;
         _http = http;
