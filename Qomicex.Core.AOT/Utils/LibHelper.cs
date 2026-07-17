@@ -79,10 +79,29 @@ namespace Qomicex.Core.AOT.Utils
             return false;
         }
 
+        public static bool IsRulesSuitable(List<Models.VersionMetadata.Rule> rules)
+        {
+            var allow = false;
+            foreach (var rule in rules)
+            {
+                if (rule.Action == "allow")
+                {
+                    if (rule.Os == null || SystemHelper.IsOsMatch(rule.Os))
+                        allow = true;
+                }
+                else if (rule.Action == "disallow")
+                {
+                    if (rule.Os == null || SystemHelper.IsOsMatch(rule.Os))
+                        allow = false;
+                }
+            }
+            return allow;
+        }
+
         public static List<Library> CheckLibsVer(List<Library> libs)
         {
             var groupedLibs = libs
-                .GroupBy(lib => lib.Name)
+                .GroupBy(lib => GetLibGroupKey(lib.Name))
                 .Select(group =>
                 {
                     Library newest = group.First();
@@ -113,6 +132,17 @@ namespace Qomicex.Core.AOT.Utils
                 return _version;
             }
             return "";
+        }
+
+        private static string GetLibGroupKey(string name)
+        {
+            var parts = name.Split(':');
+            if (parts.Length < 3)
+                return name;
+            var key = $"{parts[0]}:{parts[1]}";
+            if (parts.Length >= 4)
+                key += $":{parts[3]}";
+            return key;
         }
 
         private static int VersionSortInteger(string left, string right)

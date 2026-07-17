@@ -1,7 +1,9 @@
+using Qomicex.Core.AOT.Builder;
 using Qomicex.Core.AOT.Interfaces.Core;
 using Qomicex.Core.AOT.JsonContext;
 using Qomicex.Core.AOT.Models.Local;
 using Qomicex.Core.AOT.Models.VersionMetadata;
+using Qomicex.Core.AOT.Public.Models;
 using Qomicex.Core.AOT.Utils;
 using System.Text.Json.Nodes;
 
@@ -10,18 +12,43 @@ namespace Qomicex.Core.AOT.Services;
 internal class DefaultVersionLocator : IVersionLocator
 {
     private readonly string _versionsRootPath;
+    private readonly string _gameRootPath;
     private readonly Dictionary<string, LocalVersionInfo> _versionCache = new();
     private readonly Dictionary<string, CompleteVersionMetadata> _metadataCache = new();
     private readonly VersionMetadataJsonContext _metadataCtx = VersionMetadataJsonContext.Default;
     private bool _isCacheDirty = true;
     private bool _isRefreshing;
+    private DownloadSource _downloadSource = new();
+    private readonly HttpClient _httpClient;
+    private readonly AssetIndexDataJsonContext _assetIndexCtx = AssetIndexDataJsonContext.Default;
 
-    public DefaultVersionLocator(string gameRootPath)
+    private class DownloadSource
+    {
+        public string librariesSource = "https://libraries.minecraft.net/";
+        public string mainJarSource = string.Empty;
+        public string assetsIndexSource = string.Empty;
+        public string assetsSource = "https://resources.download.minecraft.net/";
+    }
+
+    public DefaultVersionLocator(string gameRootPath, DownloadMirror? mirror = DownloadMirror.Official, HttpClient? httpClient = null)
     {
         _versionsRootPath = Path.Combine(gameRootPath, "versions");
+        _gameRootPath = gameRootPath;
+        _httpClient = httpClient ?? new HttpClient();
         Directory.CreateDirectory(_versionsRootPath);
         RefreshCache();
+        if (mirror == DownloadMirror.BMCLAPI)
+        {
+            _downloadSource = new DownloadSource
+            {
+                librariesSource = "https://bmclapi2.bangbang93.com/maven/",
+                mainJarSource = "https://bmclapi2.bangbang93.com/",
+                assetsIndexSource = "https://bmclapi2.bangbang93.com/",
+                assetsSource = "https://bmclapi2.bangbang93.com/assets/"
+            };
+        }
     }
+
 
     public List<LocalVersionInfo> GetAllVersions()
     {
@@ -73,6 +100,227 @@ internal class DefaultVersionLocator : IVersionLocator
     public string GetVersionPath(string versionId)
     {
         return Path.Combine(_versionsRootPath, versionId);
+    }
+
+    private CompleteVersionMetadata GetMetaFromJson(string jsonData)
+    {
+        CompleteVersionMetadata? metadata;
+        try
+        {
+            metadata = System.Text.Json.JsonSerializer.Deserialize(jsonData, _metadataCtx.CompleteVersionMetadata);
+        }
+        catch (System.Text.Json.JsonException ex)
+        {
+            throw new ArgumentException("无效的版本 JSON 数据", nameof(jsonData), ex);
+        }
+        if (metadata == null)
+            throw new ArgumentException("无效的版本 JSON 数据", nameof(jsonData));
+        return metadata;
+    }
+
+    private List<Library> GetLibraries(CompleteVersionMetadata metadata)
+    {
+        var libList = new List<Library>();
+
+        foreach (var lib in metadata.Libraries ?? [])
+        {
+            if (lib.Rules is not { Count: > 0 } || LibHelper.IsRulesSuitable(lib.Rules))
+                libList.Add(lib);
+        }
+
+        if (!string.IsNullOrEmpty(metadata.InheritsFrom))
+        {
+            var parentJson = GetJsonData(metadata.InheritsFrom);
+            if (parentJson != null)
+            {
+                try
+                {
+                    libList.AddRange(GetLibraries(GetMetaFromJson(parentJson)));
+                }
+                catch (ArgumentException)
+                {
+                }
+            }
+        }
+
+        return LibHelper.CheckLibsVer(libList);
+    }
+
+    public Task<List<MissFileInfo>> GetMissLibrariesAsync(CompleteVersionMetadata meta)
+    {
+        var missFiles = new List<MissFileInfo>();
+        foreach (var lib in GetLibraries(meta))
+        {
+            foreach (var item in GetLibraryCheckItems(lib))
+            {
+                var localPath = Path.Combine(_gameRootPath, "libraries", item.Path.Replace('/', Path.DirectorySeparatorChar));
+                if (File.Exists(localPath) && (string.IsNullOrEmpty(item.Sha1) || FileHelper.ValidateFileHash(localPath, item.Sha1)))
+                    continue;
+                missFiles.Add(item with { Path = localPath });
+            }
+        }
+        return Task.FromResult(missFiles);
+    }
+
+    public Task<List<MissFileInfo>> GetMissLibrariesAsync(string jsonData)
+        => GetMissLibrariesAsync(GetMetaFromJson(jsonData));
+
+    public Task<MissFileInfo?> GetMissMainJarAsync(CompleteVersionMetadata meta)
+    {
+        var client = meta.Downloads?.Client;
+        if (client != null)
+        {
+            var jarPath = Path.Combine(_versionsRootPath, meta.Id, $"{meta.Id}.jar");
+            if (File.Exists(jarPath) && FileHelper.ValidateFileHash(jarPath, client.Sha1))
+                return Task.FromResult<MissFileInfo?>(null);
+
+            return Task.FromResult<MissFileInfo?>(new MissFileInfo(
+                $"{meta.Id}.jar",
+                ReplaceMainJarUrl(client.Url),
+                client.Sha1 ?? string.Empty,
+                jarPath));
+        }
+
+        if (!string.IsNullOrEmpty(meta.InheritsFrom))
+        {
+            var parentMeta = GetVersionMetadata(meta.InheritsFrom);
+            if (parentMeta != null)
+                return GetMissMainJarAsync(parentMeta);
+        }
+
+        return Task.FromResult<MissFileInfo?>(null);
+    }
+
+    public Task<MissFileInfo?> GetMissMainJarAsync(string jsonData)
+        => GetMissMainJarAsync(GetMetaFromJson(jsonData));
+
+    public async Task<List<MissFileInfo>> GetMissAssetsAsync(CompleteVersionMetadata meta)
+    {
+        var assetIndex = meta.AssetIndex;
+        if (assetIndex == null)
+        {
+            if (string.IsNullOrEmpty(meta.InheritsFrom))
+                return new List<MissFileInfo>();
+            var parentMeta = GetVersionMetadata(meta.InheritsFrom);
+            if (parentMeta == null)
+                return new List<MissFileInfo>();
+            return await GetMissAssetsAsync(parentMeta);
+        }
+
+        var indexPath = Path.Combine(_gameRootPath, "assets", "indexes", $"{assetIndex.Id}.json");
+        if (!File.Exists(indexPath) || !FileHelper.ValidateFileHash(indexPath, assetIndex.Sha1))
+            await DownloadAssetIndexAsync(assetIndex, indexPath);
+
+        var missFiles = new List<MissFileInfo>();
+        var indexJson = await File.ReadAllTextAsync(indexPath);
+        var indexData = System.Text.Json.JsonSerializer.Deserialize(indexJson, _assetIndexCtx.AssetIndexData);
+        if (indexData?.Objects == null)
+            return missFiles;
+
+        foreach (var obj in indexData.Objects.Values)
+        {
+            var hash = obj.Hash;
+            var localPath = Path.Combine(_gameRootPath, "assets", "objects", hash[..2], hash);
+            if (File.Exists(localPath) && FileHelper.ValidateFileHash(localPath, hash))
+                continue;
+            var url = $"{_downloadSource.assetsSource}{hash[..2]}/{hash}".Replace("http://", "https://");
+            missFiles.Add(new MissFileInfo(hash, url, hash, localPath));
+        }
+        return missFiles;
+    }
+
+    public Task<List<MissFileInfo>> GetMissAssetsAsync(string jsonData)
+        => GetMissAssetsAsync(GetMetaFromJson(jsonData));
+
+    private async Task DownloadAssetIndexAsync(AssetIndex assetIndex, string indexPath)
+    {
+        var url = assetIndex.Url;
+        if (!string.IsNullOrEmpty(_downloadSource.assetsIndexSource))
+        {
+            url = url.Replace("https://piston-meta.mojang.com/", _downloadSource.assetsIndexSource)
+                .Replace("https://launchermeta.mojang.com/", _downloadSource.assetsIndexSource)
+                .Replace("https://launcher.mojang.com/", _downloadSource.assetsIndexSource)
+                .Replace("http://", "https://");
+        }
+
+        var response = await _httpClient.GetAsync(url);
+        if (!response.IsSuccessStatusCode)
+            throw new Exception($"下载资源索引失败: {response.ReasonPhrase}");
+
+        var content = await response.Content.ReadAsStringAsync();
+        Directory.CreateDirectory(Path.GetDirectoryName(indexPath)!);
+        await File.WriteAllTextAsync(indexPath, content);
+    }
+
+    public async Task<List<MissFileInfo>> GetMissFilesAsync(CompleteVersionMetadata meta)
+    {
+        var missFiles = await GetMissLibrariesAsync(meta);
+        var missMainJar = await GetMissMainJarAsync(meta);
+        if (missMainJar != null)
+            missFiles.Add(missMainJar);
+        missFiles.AddRange(await GetMissAssetsAsync(meta));
+        return missFiles;
+    }
+
+    public Task<List<MissFileInfo>> GetMissFilesAsync(string jsonData)
+        => GetMissFilesAsync(GetMetaFromJson(jsonData));
+
+    private string ReplaceMainJarUrl(string url)
+    {
+        if (string.IsNullOrEmpty(_downloadSource.mainJarSource))
+            return url;
+        return url.Replace("https://piston-meta.mojang.com/", _downloadSource.mainJarSource)
+            .Replace("https://launchermeta.mojang.com/", _downloadSource.mainJarSource)
+            .Replace("https://launcher.mojang.com/", _downloadSource.mainJarSource)
+            .Replace("https://piston-data.mojang.com/", _downloadSource.mainJarSource);
+    }
+
+    private List<MissFileInfo> GetLibraryCheckItems(Library lib)
+    {
+        var items = new List<MissFileInfo>();
+
+        var artifact = lib.Downloads?.Artifact;
+        if (artifact != null)
+        {
+            items.Add(new MissFileInfo(lib.Name, ReplaceLibraryUrl(artifact.Url, artifact.Path), artifact.Sha1 ?? string.Empty, artifact.Path));
+        }
+
+        if (lib.Natives != null && lib.Downloads?.Classifiers != null)
+        {
+            var osName = SystemHelper.GetCurrentOsName();
+            if (lib.Natives.TryGetValue(osName, out var nativeClassifier))
+            {
+                var classifierKey = nativeClassifier.Replace("${arch}", SystemHelper.GetCurrentArch());
+                if (lib.Downloads.Classifiers.TryGetValue(classifierKey, out var nativeArtifact))
+                    items.Add(new MissFileInfo($"{lib.Name}:{classifierKey}", ReplaceLibraryUrl(nativeArtifact.Url, nativeArtifact.Path), nativeArtifact.Sha1 ?? string.Empty, nativeArtifact.Path));
+            }
+        }
+
+        if (lib.Downloads == null && !string.IsNullOrEmpty(lib.Name))
+        {
+            var path = LibHelper.MavenToPath(lib.Name);
+            if (!string.IsNullOrEmpty(path))
+                items.Add(new MissFileInfo(lib.Name, $"{_downloadSource.librariesSource}{path}", string.Empty, path));
+        }
+
+        return items;
+    }
+
+    private string ReplaceLibraryUrl(string? url, string path)
+    {
+        if (string.IsNullOrEmpty(url))
+            return $"{_downloadSource.librariesSource}{path}";
+        return url.Replace("https://libraries.minecraft.net/", _downloadSource.librariesSource);
+    }
+
+    private string? GetJsonData(string versionId)
+    {
+        var jsonPath = Path.Combine(_versionsRootPath, versionId, $"{versionId}.json");
+
+        if (!File.Exists(jsonPath))
+            return null;
+
+        return File.ReadAllText(jsonPath);
     }
 
     private void EnsureCacheFresh()

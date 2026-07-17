@@ -97,8 +97,8 @@ public class DefaultGameCoreUnitTests : UnitTestBase
     {
         var expected = new List<LocalVersionInfo>
         {
-            new("1.20.1", "release", DateTime.UtcNow, true, "/path/1.20.1", 10000000),
-            new("1.19.4", "release", DateTime.UtcNow, true, "/path/1.19.4", 8000000)
+            new("1.20.1", new List<ModloaderInfo> { new(ModloaderType.Vanilla, "") }, DateTime.UtcNow, true, "/path/1.20.1", "1.20.1", 10000000),
+            new("1.19.4", new List<ModloaderInfo> { new(ModloaderType.Vanilla, "") }, DateTime.UtcNow, true, "/path/1.19.4", "1.19.4", 8000000)
         };
 
         MockVersionService
