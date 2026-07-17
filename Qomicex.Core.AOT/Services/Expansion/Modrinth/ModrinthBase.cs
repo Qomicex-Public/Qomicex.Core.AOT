@@ -56,7 +56,6 @@ internal class ModrinthBase : IModrinthSource
         int page = 0,
         int pageSize = 20)
     {
-        ArgumentException.ThrowIfNullOrEmpty(query);
         ArgumentOutOfRangeException.ThrowIfNegative(pageSize, nameof(pageSize));
         if (pageSize > 100) throw new ArgumentOutOfRangeException(nameof(pageSize), "每页数量最大 100");
 
