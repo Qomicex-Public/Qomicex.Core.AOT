@@ -101,6 +101,17 @@ namespace Qomicex.Core.AOT.Services
                 }
                 catch (Exception ex)
                 {
+                    try
+                    {
+                        var logDir = System.IO.Path.Combine(
+                            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                            "qomicex-launcher", "logs");
+                        System.IO.Directory.CreateDirectory(logDir);
+                        System.IO.File.AppendAllText(
+                            System.IO.Path.Combine(logDir, "launch-errors.log"),
+                            $"[{DateTime.UtcNow:O}] [LaunchExecutor] {ex}\n\n");
+                    }
+                    catch { }
                     return new LaunchResult
                     {
                         Success = false,
@@ -314,7 +325,7 @@ namespace Qomicex.Core.AOT.Services
                 }
             }
 
-            if (!string.IsNullOrEmpty(meta.InheritsFrom))
+            if (meta is not null && !string.IsNullOrEmpty(meta.InheritsFrom))
                 LibList.AddRange(GetNatives(options with { Version = meta.InheritsFrom }));
 
             return LibHelper.CheckLibsVer(LibList);
@@ -457,6 +468,8 @@ namespace Qomicex.Core.AOT.Services
 
             var locator = new DefaultVersionLocator(_gameDir);
             var meta = locator.GetVersionMetadata(options.Version);
+            if (meta is null)
+                throw new ParamsException($"版本元数据未找到: {options.Version}");
 
             foreach(var lib in meta.Libraries)
             {
@@ -513,10 +526,10 @@ namespace Qomicex.Core.AOT.Services
             string mainClass = meta?.MainClass;
             if (string.IsNullOrEmpty(mainClass))
             {
-                if (!string.IsNullOrEmpty(meta!.InheritsFrom))
-                    mainClass = GetMainClass(options with { Version = meta!.InheritsFrom });
+                if (meta is not null && !string.IsNullOrEmpty(meta.InheritsFrom))
+                    mainClass = GetMainClass(options with { Version = meta.InheritsFrom });
                 else
-                    throw new ParamsException("MainClass键不存在");
+                    throw new ParamsException($"MainClass键不存在 (Version: {options.Version})");
             }
             return mainClass;
         }
