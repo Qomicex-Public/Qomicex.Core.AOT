@@ -31,6 +31,10 @@ namespace Qomicex.Core.AOT.Services
 
         public Task<LaunchResult> LaunchAsync(LaunchOptions launchOptions)
         {
+            var originalGameDir = _gameDir;
+            if (!string.IsNullOrEmpty(launchOptions.GameRoot))
+                _gameDir = launchOptions.GameRoot;
+
             return Task.Run(() =>
             {
                 var locator = new DefaultVersionLocator(_gameDir);

@@ -41,6 +41,7 @@ public sealed record class LaunchOptions
     public string? JoinWorld { get; set; }
     public JavaOptions? JavaOptions { get; set; }
     public AuthOptions? AuthOptions { get; set; }
+    public string? GameRoot { get; set; }
 }
 public enum AuthMode { Offline, Microsoft, Yggdrasil }
 
