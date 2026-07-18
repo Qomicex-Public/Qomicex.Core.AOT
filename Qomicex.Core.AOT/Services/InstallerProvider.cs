@@ -87,7 +87,7 @@ namespace Qomicex.Core.AOT.Services
             return type switch
             {
                 ModLoaderType.Forge => (await GetForgeVersions(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
-                ModLoaderType.Fabic => (await GetFabricVersions(gameVersion, GetFabricBaseUrl())).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
+                ModLoaderType.Fabric => (await GetFabricVersions(gameVersion, GetFabricBaseUrl())).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
                 ModLoaderType.Quilt => (await GetQuiltVersions(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
                 ModLoaderType.LiteLoader => (await GetLiteloaderVersions(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
                 ModLoaderType.NeoForge => _mirror == DownloadMirror.Official
@@ -286,7 +286,7 @@ namespace Qomicex.Core.AOT.Services
                     if (string.IsNullOrEmpty(loaderVersion)) continue;
 
                     versions.Add(new ModLoaderResult(
-                        ModLoaderType.Fabic,
+                        ModLoaderType.Fabric,
                         loaderVersion,
                         minecraftVersion,
                         "API未提供",

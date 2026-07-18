@@ -52,16 +52,20 @@ namespace Qomicex.Core.AOT.Services
                     {
                         StartInfo = new ProcessStartInfo
                         {
-                            FileName = NormalizeArg(launchOptions.JavaOptions.JavaPath),
+                            FileName = NormalizeArg(launchOptions.JavaOptions?.JavaPath ?? "java"),
                             Arguments = paramsStr,
                             UseShellExecute = false,
                             RedirectStandardOutput = true,
                             RedirectStandardError = true,
-                            CreateNoWindow = true
+                            CreateNoWindow = true,
+                            WorkingDirectory = launchOptions.VersionIsolation
+                                ? Path.Combine(_gameDir, "versions", launchOptions.Version)
+                                : _gameDir
                         },
                         EnableRaisingEvents = true
                     };
 
+                    Console.Error.WriteLine($"> {NormalizeArg(launchOptions.JavaOptions?.JavaPath ?? "java")} {paramsStr}");
                     process.Start();
 
                     var result = new LaunchResult
@@ -70,9 +74,9 @@ namespace Qomicex.Core.AOT.Services
                         ProcessId = process.Id,
                         Message = $"进程已启动: {process.Id}",
                         Exception = null,
-                        OnOutput = line => Trace.WriteLine($"[OUT] {line}"),
-                        OnError = line => Trace.WriteLine($"[ERR] {line}"),
-                        OnExit = code => Trace.WriteLine($"进程退出，代码: {code}")
+                        OnOutput = line => Console.WriteLine($"[OUT] {line}"),
+                        OnError = line => Console.Error.WriteLine($"[ERR] {line}"),
+                        OnExit = code => Console.Error.WriteLine($"进程退出，代码: {code}")
                     };
 
                     process.OutputDataReceived += (_, e) =>
@@ -334,7 +338,7 @@ namespace Qomicex.Core.AOT.Services
         private string SelectParams(LaunchOptions options)
         {
             List<string> paramList = new List<string>();
-            Config? config = ParseGameJson(options);
+            var config = ParseGameJson(options);
 
             //拼接JVM
             paramList.AddRange(GetJVMParams(options));
@@ -347,21 +351,21 @@ namespace Qomicex.Core.AOT.Services
 
             //处理参数
             // 获取 assetIndex
-            string assetsIndex = config?.AssetIndex?.Id ?? string.Empty;
+            string assetsIndex = config.AssetIndex?.Id ?? string.Empty;
             if(string.IsNullOrEmpty(assetsIndex))
             {
-                if (config!.InheritsFrom is null)
+                if (config.InheritsFrom is null)
                     throw new ParamsException("获取AssetIndex错误");
-                var inheritsFromConfig = ParseGameJson(options with { Version = config!.InheritsFrom });
-                assetsIndex = inheritsFromConfig!.AssetIndex.Id;
+                var inheritsFromConfig = ParseGameJson(options with { Version = config.InheritsFrom });
+                assetsIndex = inheritsFromConfig.AssetIndex.Id;
             }
             //处理账户
             string loginMode = "Legacy";
-            if (options.AuthOptions.Mode != AuthMode.Offline)
+            if (options.AuthOptions?.Mode != AuthMode.Offline)
                 loginMode = "Microsoft";
             if (loginMode == "Legacy")
             {
-                var auth = options.AuthOptions with { Uuid = NameToUuid(options.AuthOptions.Name) };
+                var auth = options.AuthOptions! with { Uuid = NameToUuid(options.AuthOptions.Name ?? "") };
                 options = options with { AuthOptions = auth };
             }
             //处理ClassPath
@@ -439,26 +443,26 @@ namespace Qomicex.Core.AOT.Services
 
             // 替换参数
             string paramString = string.Join(" ", paramList);
-            paramString = paramString.Replace("${max_memory}", options.JavaOptions.MaxMemoryMB.ToString())
+            paramString = paramString.Replace("${max_memory}", (options.JavaOptions?.MaxMemoryMB ?? 512).ToString())
                 .Replace("${natives_directory}", NormalizeArg(FileHelper.FormatDirPath(Path.Combine(_gameDir, "versions", options.Version, $"{options.Version}-natives").TrimEnd(SystemHelper.GetSeparator()).ToString())))
                 .Replace("${launcher_name}", NormalizeArg(_launchName))
                 .Replace("${classpath_separator}", SystemHelper.GetSeparator())
                 .Replace("${game_assets}", NormalizeArg(FileHelper.FormatDirPath(Path.Combine(_gameDir, "assets").TrimEnd(SystemHelper.GetSeparator()).ToString())))
-                .Replace("${uuid}", options.AuthOptions.Uuid)
+                .Replace("${uuid}", options.AuthOptions?.Uuid ?? "")
                 .Replace("${user_properties}", "{}")
                 .Replace("${version_type}", NormalizeArg(_launchName))
                 .Replace("${user_type}", loginMode)
-                .Replace("${auth_access_token}", NormalizeArg(options.AuthOptions.AccessToken))
+                .Replace("${auth_access_token}", NormalizeArg(options.AuthOptions?.AccessToken))
                 .Replace("${assets_index_name}", NormalizeArg(assetsIndex))
                 .Replace("${assets_root}", FileHelper.FormatDirPath(Path.Combine(_gameDir, "assets")))
                 .Replace("${classpath}", NormalizeArg(cpLibsStr))
                 .Replace("${game_directory}", NormalizeArg(FileHelper.FormatDirPath(gameVersionDir.TrimEnd(SystemHelper.GetSeparator()).ToString())))
                 .Replace("${version_name}", $"\"{options.Version}\"")
-                .Replace("${auth_uuid}", options.AuthOptions.Uuid)
-                .Replace("${auth_player_name}", options.AuthOptions.Name)
+                .Replace("${auth_uuid}", options.AuthOptions?.Uuid ?? "")
+                .Replace("${auth_player_name}", options.AuthOptions?.Name ?? "")
                 .Replace("${library_directory}", FileHelper.FormatDirPath(Path.Combine(_gameDir, "libraries").TrimEnd(SystemHelper.GetSeparator()).ToString()))
                 .Replace("${launcher_version}", "23")
-                .Replace("${authlib_injector_param}", options.AuthOptions.AuthlibInjectorParam);
+                .Replace("${authlib_injector_param}", options.AuthOptions?.AuthlibInjectorParam);
             return paramString;
         }
 
@@ -523,7 +527,7 @@ namespace Qomicex.Core.AOT.Services
             var locator = new DefaultVersionLocator(_gameDir);
             var meta = locator.GetVersionMetadata(options.Version);
 
-            string mainClass = meta?.MainClass;
+            string? mainClass = meta?.MainClass;
             if (string.IsNullOrEmpty(mainClass))
             {
                 if (meta is not null && !string.IsNullOrEmpty(meta.InheritsFrom))
@@ -544,14 +548,14 @@ namespace Qomicex.Core.AOT.Services
                 WriteIndented = true
             };
 
-            Config? config = JsonSerializer.Deserialize<Config>(json, jsonOptions);
+            Config? config = JsonSerializer.Deserialize(json, ParamsJsonContent.Default.Config);
 
             if (config is null)
             {
                 throw new ParamsException("版本Json解析失败");
             }
 
-            return config;
+            return config!;
         }
 
         private List<string> GetJVMParams(LaunchOptions options)
@@ -575,7 +579,7 @@ namespace Qomicex.Core.AOT.Services
                 WriteIndented = true
             };
 
-            Config? config = JsonSerializer.Deserialize<Config>(json, jsonOptions);
+            var config = JsonSerializer.Deserialize(json, ParamsJsonContent.Default.Config);
 
             if (config is null)
             {
@@ -592,7 +596,7 @@ namespace Qomicex.Core.AOT.Services
                 jvmList.Add("-Dfml.ignorePatchDiscrepancies=True");
                 jvmList.Add("-Dlog4j2.formatMsgNoLookups=true");
 
-                if (options.JavaOptions.ExtraJvmArgs is not null)
+                if (options.JavaOptions?.ExtraJvmArgs is not null)
                 {
                     jvmList.AddRange(options.JavaOptions.ExtraJvmArgs);
                 }
@@ -638,7 +642,7 @@ namespace Qomicex.Core.AOT.Services
                 if (element.ValueKind == JsonValueKind.Object)
                 {
                     bool shouldAdd = false;
-                    var entry = JsonSerializer.Deserialize<ParamEntry>(element, jsonOptions);
+                    var entry = JsonSerializer.Deserialize(element, ParamsJsonContent.Default.ParamEntry);
 
                     if (entry?.Rules is { Count: > 0 })
                     {
@@ -656,14 +660,14 @@ namespace Qomicex.Core.AOT.Services
                     {
                         if (entry?.Value.ValueKind == JsonValueKind.String)
                         {
-                            if(!entry.Value.GetString().Contains("-Dos.version=") && !entry.Value.GetString().Contains("-Dos.name="))
+                            if(!entry.Value.GetString()!.Contains("-Dos.version=") && !entry.Value.GetString()!.Contains("-Dos.name="))
                             {
                                 jvmList.Add(NormalizeArg(entry.Value.GetString()));
                             }
                         }
                         else if (entry?.Value.ValueKind == JsonValueKind.Array)
                             foreach (var v in entry.Value.EnumerateArray())
-                                if (!v.GetString().Contains("-Dos.version=") && !v.GetString().Contains("-Dos.name="))
+                                if (!v.GetString()!.Contains("-Dos.version=") && !v.GetString()!.Contains("-Dos.name="))
                                 {
                                     jvmList.Add(NormalizeArg(v.GetString()));
                                 }
@@ -671,7 +675,7 @@ namespace Qomicex.Core.AOT.Services
                 }
                 else if (element.ValueKind == JsonValueKind.String)
                 {
-                    if (!element.GetString().Contains("-Dos.version=") && !element.GetString().Contains("-Dos.name="))
+                    if (!element.GetString()!.Contains("-Dos.version=") && !element.GetString()!.Contains("-Dos.name="))
                         jvmList.Add(NormalizeArg(element.GetString()));
                 }
             }
@@ -694,7 +698,7 @@ namespace Qomicex.Core.AOT.Services
                 WriteIndented = true
             };
 
-            Config? config = JsonSerializer.Deserialize<Config>(json, jsonOptions);
+            Config? config = JsonSerializer.Deserialize(json, ParamsJsonContent.Default.Config);
 
             if (config is null)
             {
@@ -702,7 +706,7 @@ namespace Qomicex.Core.AOT.Services
             }
 
             //处理InheritsFrom
-            if (!string.IsNullOrEmpty(config!.InheritsFrom))
+            if (!string.IsNullOrEmpty(config.InheritsFrom))
             {
                 var inheritsFromOptions = options with { Version = config.InheritsFrom };
 
@@ -719,7 +723,7 @@ namespace Qomicex.Core.AOT.Services
             {
                 if (element.ValueKind == JsonValueKind.Object)
                 {
-                    var entry = JsonSerializer.Deserialize<ParamEntry>(element, jsonOptions);
+                    var entry = JsonSerializer.Deserialize(element, ParamsJsonContent.Default.ParamEntry);
                     if (entry?.Rules is { Count: > 0 })
                         continue;
 
@@ -750,7 +754,7 @@ namespace Qomicex.Core.AOT.Services
             return gameList;
         }
 
-        string NormalizeArg(string value)
+        string NormalizeArg(string? value)
         {
             if (string.IsNullOrEmpty(value)) return string.Empty;
             value = value.Trim();

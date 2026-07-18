@@ -39,7 +39,9 @@ internal class ModrinthBase : IModrinthSource
         if (!url.StartsWith("http"))
             url = _baseUrl + url;
 
+#pragma warning disable IL2026, IL3050
         var jsonData = JsonSerializer.Serialize(data);
+#pragma warning restore IL2026, IL3050
         var content = new StringContent(jsonData, Encoding.UTF8, "application/json");
         var response = await _http.PostAsync(url, content);
         response.EnsureSuccessStatusCode();

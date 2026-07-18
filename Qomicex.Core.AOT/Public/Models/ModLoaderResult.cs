@@ -19,7 +19,7 @@ namespace Qomicex.Core.AOT.Public.Models
         All,
         Forge,
         NeoForge,
-        Fabic,
+        Fabric,
         Quilt,
         LiteLoader,
         OptiFine

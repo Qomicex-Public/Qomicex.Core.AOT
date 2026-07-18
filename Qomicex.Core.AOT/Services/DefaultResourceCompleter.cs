@@ -32,7 +32,7 @@ internal class DefaultResourceCompleter : IResourceCompleter
     {
         var downloadTasks = new List<Task>();
 
-        if (metadata.Downloads.Client != null)
+        if (metadata.Downloads?.Client is { } client)
             downloadTasks.Add(DownloadArtifactAsync(metadata.Downloads.Client, progress));
 
         foreach (var library in metadata.Libraries)

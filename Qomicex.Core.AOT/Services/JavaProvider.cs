@@ -118,6 +118,7 @@ namespace Qomicex.Core.AOT.Services
         #endregion
         public Task<List<JavaResult>> Search(JavaSearchOptions? options = null)
         {
+            ArgumentNullException.ThrowIfNull(options);
             if (options.Mode == JavaSearchMode.Custom && string.IsNullOrEmpty(options.CustomRootPath))
             {
                 throw new ArgumentException("Custom模式必须提供CustomRootPath");
@@ -152,11 +153,11 @@ namespace Qomicex.Core.AOT.Services
                 else
                 {
                     if (require == 8)
-                        throw new Exception("找不到合适的Java");
+            throw new Exception($"找不到合适的Java运行时 (需要 Java >= {require})");
                     return Task.FromResult(diffItem.java);
                 }
             }
-            throw new Exception("找不到合适的Java");
+            throw new Exception($"找不到合适的Java运行时 (需要 Java >= {require})");
         }
 
         private struct JavaDiff
@@ -544,7 +545,7 @@ namespace Qomicex.Core.AOT.Services
 
         private int GetRequireMajroVersion(CompleteVersionMetadata metadata)
         {
-            return metadata.JavaVersion.MajorVersion;
+            return metadata.JavaVersion?.MajorVersion ?? throw new InvalidOperationException("JavaVersion metadata missing");
         }
 
         private static List<JavaResult> ProcessResults(

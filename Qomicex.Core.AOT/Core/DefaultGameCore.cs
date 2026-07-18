@@ -41,6 +41,7 @@ public sealed class DefaultGameCore : IDisposable
         HttpClient = http;
         GameRoot = gameRoot;
         _http = http;
+        InstallerProvider = installerProvider;
     }
 
     public IModrinthSource CreateModrinthSource() => new ModrinthBase(_http);
