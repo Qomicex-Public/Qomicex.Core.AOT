@@ -19,6 +19,8 @@ public sealed class GameCoreBuilder
     private IDownloadSourceManager? _source;
     private IJavaProvider? _javaProvider;
     private IInstallerProvider? _installerProvider;
+    private IOptionsProvider? _optionsProvider;
+    private IServerManager? _serverManager;
 
     public GameCoreBuilder Configure(Action<CoreOptions> configure)
     {
@@ -107,6 +109,18 @@ public sealed class GameCoreBuilder
         return this;
     }
 
+    public GameCoreBuilder WithOptionsProvider(IOptionsProvider optionsProvider)
+    {
+        _optionsProvider = optionsProvider;
+        return this;
+    }
+
+    public GameCoreBuilder WithServerManager(IServerManager serverManager)
+    {
+        _serverManager = serverManager;
+        return this;
+    }
+
     public DefaultGameCore Build()
     {
         var http = _http ?? new HttpClient();
@@ -120,7 +134,7 @@ public sealed class GameCoreBuilder
         var installerProvider = _installerProvider ?? new InstallerProvider(http,_options.DownloadMirror);
         var locator = new DefaultVersionLocator(_options.GameRoot, _options.DownloadMirror, http);
 
-        return new DefaultGameCore(version, auth, launch,javaProvider,installerProvider, locator, http, _options.GameRoot);
+        return new DefaultGameCore(version, auth, launch, javaProvider, installerProvider, locator, http, _options.GameRoot, _optionsProvider, _serverManager);
     }
 
     private IAuthProvider CreateAuthProvider(HttpClient http)

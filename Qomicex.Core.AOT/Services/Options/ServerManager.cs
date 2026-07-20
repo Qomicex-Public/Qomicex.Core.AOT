@@ -1,3 +1,4 @@
+using Qomicex.Core.AOT.Public.Services;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
@@ -8,7 +9,7 @@ using System.Text.Json;
 
 namespace Qomicex.Core.AOT.Services.Options;
 
-internal sealed class ServerManager
+internal sealed class ServerManager : IServerManager
 {
     private readonly string _gameDirectory;
     private readonly string _version;

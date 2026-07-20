@@ -1,10 +1,11 @@
 using Qomicex.Core.AOT.JsonContext;
+using Qomicex.Core.AOT.Public.Services;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace Qomicex.Core.AOT.Services.Options;
 
-internal sealed partial class OptionsProvider
+internal sealed partial class OptionsProvider : IOptionsProvider
 {
     private const string DefaultDescription = "(无描述)";
     private const string FallbackLanguage = "en-US";

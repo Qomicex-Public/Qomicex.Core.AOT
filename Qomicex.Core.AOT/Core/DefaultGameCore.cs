@@ -22,6 +22,8 @@ public sealed class DefaultGameCore : IDisposable
     public IJavaProvider JavaProvider { get; }
     public IInstallerProvider InstallerProvider { get; }
     public IVersionLocator Locator { get; }
+    public IOptionsProvider? Options { get; }
+    public IServerManager? ServerManager { get; }
 
     internal DefaultGameCore(
         IVersionManagementService version,
@@ -31,7 +33,9 @@ public sealed class DefaultGameCore : IDisposable
         IInstallerProvider installerProvider,
         IVersionLocator locator,
         HttpClient http,
-        string gameRoot)
+        string gameRoot,
+        IOptionsProvider? optionsProvider = null,
+        IServerManager? serverManager = null)
     {
         Version = version;
         Auth = auth;
@@ -42,6 +46,8 @@ public sealed class DefaultGameCore : IDisposable
         GameRoot = gameRoot;
         _http = http;
         InstallerProvider = installerProvider;
+        Options = optionsProvider;
+        ServerManager = serverManager;
     }
 
     public IModrinthSource CreateModrinthSource() => new ModrinthBase(_http);
