@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace Qomicex.Core.AOT.Services.Options;
 
-public partial class OptionsProvider
+internal sealed partial class OptionsProvider
 {
     private const string DefaultDescription = "(无描述)";
     private const string FallbackLanguage = "en-US";

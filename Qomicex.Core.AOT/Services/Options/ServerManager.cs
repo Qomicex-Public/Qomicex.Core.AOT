@@ -8,7 +8,7 @@ using System.Text.Json;
 
 namespace Qomicex.Core.AOT.Services.Options;
 
-public sealed class ServerManager
+internal sealed class ServerManager
 {
     private readonly string _gameDirectory;
     private readonly string _version;
