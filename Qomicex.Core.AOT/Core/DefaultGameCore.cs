@@ -28,7 +28,7 @@ public sealed class DefaultGameCore : IDisposable
     public IServerManager? ServerManager { get; }
     public IDownloadSourceManager DownloadManager { get; }
     public IInstallerFactory Installer { get; }
-    public ILocalModsFactory LocalResourceProvider { get; }
+    public ILocalResourcesFactory LocalResourceProvider { get; }
 
     internal DefaultGameCore(
         IVersionManagementService version,
@@ -43,7 +43,7 @@ public sealed class DefaultGameCore : IDisposable
         IServerManager? serverManager = null,
         IDownloadSourceManager? downloadManager = null,
         IInstallerFactory? installerFactory = null,
-        ILocalModsFactory? localResourceProvider = null)
+        ILocalResourcesFactory? localResourceProvider = null)
     {
         Version = version;
         Auth = auth;

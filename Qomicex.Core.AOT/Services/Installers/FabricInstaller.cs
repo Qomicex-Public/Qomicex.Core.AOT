@@ -68,6 +68,12 @@ internal class FabricInstaller : InstallerBase, IInstaller
         return meta.ToJsonString();
     }
 
+    public Task<List<MissFileData>> GetMissLibrariesAsync(string? para1, string? para2, string? para3)
+    {
+        if (para1 == null || para2 == null || para3 == null) return Task.FromResult(new List<MissFileData>());
+        return GetMissFabricLibraries(para1, para2, para3);
+    }
+
     public async Task<List<MissFileData>> GetMissFabricLibraries(string fabricVersion, string gameVersion, string gameDir)
     {
         var missFiles = new List<MissFileData>();
@@ -96,20 +102,18 @@ internal class FabricInstaller : InstallerBase, IInstaller
                         continue;
                 }
 
-                var file = new MissFileData
-                {
-                    Name = lib!["name"]?.ToString()!,
-                    Path = libPath,
-                    Url = Path.Combine(urlDomain, MavenToPath(lib!["name"]?.ToString()!)),
-                    Sha1 = lib!["sha1"]?.ToString() ?? "",
-                };
-
+                var url = Path.Combine(urlDomain, MavenToPath(lib!["name"]?.ToString()!));
                 if (_downloadSource != "https://meta.fabricmc.net/")
-                    file.Url = file.Url
+                    url = url
                         .Replace("https://meta.fabricmc.net/", "https://bmclapi2.bangbang93.com/fabric-meta")
                         .Replace("https://maven.fabricmc.net/", "https://bmclapi2.bangbang93.com/maven");
 
-                missFiles.Add(file);
+                missFiles.Add(new MissFileData(
+                    lib!["name"]?.ToString()!,
+                    libPath,
+                    url,
+                    lib!["sha1"]?.ToString() ?? ""
+                ));
             }
         }
         return missFiles;
@@ -123,13 +127,5 @@ internal class FabricInstaller : InstallerBase, IInstaller
         byte[] hashBytes = sha1.ComputeHash(stream);
         string actualHash = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
         return actualHash.Trim().Equals(expectedHash.Trim(), StringComparison.OrdinalIgnoreCase);
-    }
-
-    public class MissFileData
-    {
-        public string Name = string.Empty;
-        public string Path = string.Empty;
-        public string Url = string.Empty;
-        public string Sha1 = string.Empty;
     }
 }

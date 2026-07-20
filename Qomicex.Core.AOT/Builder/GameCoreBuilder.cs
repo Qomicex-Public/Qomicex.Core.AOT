@@ -24,7 +24,7 @@ public sealed class GameCoreBuilder
     private IOptionsProvider? _optionsProvider;
     private IServerManager? _serverManager;
     private IInstallerFactory? _installerFactory;
-    private ILocalModsFactory? _localResourceProvider;
+    private ILocalResourcesFactory? _localResourceProvider;
 
     public GameCoreBuilder Configure(Action<CoreOptions> configure)
     {
@@ -119,7 +119,7 @@ public sealed class GameCoreBuilder
         return this;
     }
 
-    public GameCoreBuilder WithLocalResourceProvider(ILocalModsFactory localResourceProvider)
+    public GameCoreBuilder WithLocalResourceProvider(ILocalResourcesFactory localResourceProvider)
     {
         _localResourceProvider = localResourceProvider;
         return this;
@@ -151,7 +151,7 @@ public sealed class GameCoreBuilder
         var locator = new DefaultVersionLocator(_options.GameRoot, _options.DownloadMirror, http);
 
         _installerFactory ??= new DefaultInstallerFactory();
-        _localResourceProvider ??= new DefaultLocalModsFactory(http, _options.GameRoot);
+        _localResourceProvider ??= new DefaultLocalResourcesFactory(http, _options.GameRoot);
 
         if (_options.OptionsJsonPath is not null
             && _options.DescriptionsJsonPath is not null

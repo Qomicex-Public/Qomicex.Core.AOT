@@ -267,6 +267,12 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
         }
     }
 
+    public Task<List<MissFileData>> GetMissLibrariesAsync(string? para1, string? para2, string? para3)
+    {
+        if (para1 == null) return Task.FromResult(new List<MissFileData>());
+        return Task.FromResult(GetMissForgeLibraries(para1, para2!));
+    }
+
     public List<MissFileData> GetMissForgeLibraries(string forgeInstallerPath, string versionId)
     {
         var versionData = string.Empty;
@@ -309,13 +315,12 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
                 else
                     url = $"{BaseUrl}/{lib.Path}";
 
-                missFiles.Add(new MissFileData
-                {
-                    Name = $"{lib.Name}-{lib.Version}.jar",
-                    Path = libPath,
-                    Url = url,
-                    Sha1 = lib.Hash,
-                });
+                missFiles.Add(new MissFileData(
+                    $"{lib.Name}-{lib.Version}.jar",
+                    libPath,
+                    url,
+                    lib.Hash
+                ));
             }
         }
         return missFiles;
@@ -351,15 +356,6 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
         public string Hash = string.Empty;
         public string Url = string.Empty;
     }
-
-    public class MissFileData
-    {
-        public string Name = string.Empty;
-        public string Path = string.Empty;
-        public string Url = string.Empty;
-        public string Sha1 = string.Empty;
-    }
-
     internal static List<LibInfo> CheckLibsVerStatic(List<LibInfo> libs)
     {
         return libs

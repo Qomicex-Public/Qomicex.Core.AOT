@@ -9,7 +9,7 @@ using System.Text.Json;
 
 namespace Qomicex.Core.AOT.Services.Options;
 
-internal sealed class ServerManager : IServerManager
+public sealed class ServerManager : IServerManager
 {
     private readonly string _gameDirectory;
     private readonly string _version;

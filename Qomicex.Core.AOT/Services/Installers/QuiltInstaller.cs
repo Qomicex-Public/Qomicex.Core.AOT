@@ -68,9 +68,15 @@ internal class QuiltInstaller : InstallerBase, IInstaller
         return meta.ToJsonString();
     }
 
-    public async Task<List<FabricInstaller.MissFileData>> GetMissQuiltLibraries(string quiltVersion, string gameVersion, string gameDir)
+    public Task<List<MissFileData>> GetMissLibrariesAsync(string? para1, string? para2, string? para3)
     {
-        var missFiles = new List<FabricInstaller.MissFileData>();
+        if (para1 == null || para2 == null || para3 == null) return Task.FromResult(new List<MissFileData>());
+        return GetMissQuiltLibraries(para1, para2, para3);
+    }
+
+    public async Task<List<MissFileData>> GetMissQuiltLibraries(string quiltVersion, string gameVersion, string gameDir)
+    {
+        var missFiles = new List<MissFileData>();
         using var client = CreateHttpClient();
         var result = await client.GetAsync($"{_downloadSource}v3/versions/loader/{gameVersion}/{quiltVersion}/profile/json");
         if (!result.IsSuccessStatusCode)
@@ -96,13 +102,12 @@ internal class QuiltInstaller : InstallerBase, IInstaller
                         continue;
                 }
 
-                missFiles.Add(new FabricInstaller.MissFileData
-                {
-                    Name = lib!["name"]?.ToString()!,
-                    Path = $"{gameDir}/libraries/{MavenToPath(lib!["name"]?.ToString()!)}",
-                    Url = $"{urlDomain}{MavenToPath(lib!["name"]?.ToString()!)}",
-                    Sha1 = lib!["sha1"]?.ToString() ?? "",
-                });
+                missFiles.Add(new MissFileData(
+                    lib!["name"]?.ToString()!,
+                    $"{gameDir}/libraries/{MavenToPath(lib!["name"]?.ToString()!)}",
+                    $"{urlDomain}{MavenToPath(lib!["name"]?.ToString()!)}",
+                    lib!["sha1"]?.ToString() ?? ""
+                ));
             }
         }
         return missFiles;

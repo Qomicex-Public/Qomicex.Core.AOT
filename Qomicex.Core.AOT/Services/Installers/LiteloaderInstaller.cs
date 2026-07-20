@@ -69,6 +69,9 @@ internal class LiteloaderInstaller : InstallerBase, IInstaller
         return true;
     }
 
+    public Task<List<MissFileData>> GetMissLibrariesAsync(string? para1, string? para2, string? para3)
+        => Task.FromResult(new List<MissFileData>());
+
     private async Task<LiteLoaderRemoteVersion?> GetRemoteVersionByVersionsAsync(string mcVersion, string liteVersion)
     {
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };

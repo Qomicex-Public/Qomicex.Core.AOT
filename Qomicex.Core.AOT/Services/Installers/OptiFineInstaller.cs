@@ -41,6 +41,9 @@ internal class OptiFineInstaller : InstallerBase, IInstaller
         await InstallCoreAsync(versionId, version, javaPath, inheritsFromJson);
     }
 
+    public Task<List<MissFileData>> GetMissLibrariesAsync(string? para1, string? para2, string? para3)
+        => Task.FromResult(new List<MissFileData>());
+
     private async Task InstallCoreAsync(string versionId, OptiFineVersionInfo version, string javaPath, string? inheritsFromJson)
     {
         var installerFile = await DownloadInstallerAsync(version);

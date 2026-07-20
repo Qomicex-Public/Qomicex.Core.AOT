@@ -155,7 +155,13 @@ internal class NeoForgeInstaller : ForgeInstallerBase, IInstaller
         }
     }
 
-    public List<ForgeInstaller.MissFileData> GetMissNeoForgeLibraries(string neoForgeInstallerPath, string versionId)
+    public Task<List<MissFileData>> GetMissLibrariesAsync(string? para1, string? para2, string? para3)
+    {
+        if (para1 == null) return Task.FromResult(new List<MissFileData>());
+        return Task.FromResult(GetMissNeoForgeLibraries(para1, para2!));
+    }
+
+    public List<MissFileData> GetMissNeoForgeLibraries(string neoForgeInstallerPath, string versionId)
     {
         var versionData = string.Empty;
         var installProfileData = string.Empty;
@@ -177,7 +183,7 @@ internal class NeoForgeInstaller : ForgeInstallerBase, IInstaller
         }
         libs = ForgeInstaller.CheckLibsVerStatic(libs);
 
-        var missFiles = new List<ForgeInstaller.MissFileData>();
+        var missFiles = new List<MissFileData>();
         foreach (var lib in libs)
         {
             var libPath = Path.Combine(this.gameDir, "libraries", lib.Path);
@@ -189,13 +195,12 @@ internal class NeoForgeInstaller : ForgeInstallerBase, IInstaller
                 else
                     url = $"{BaseUrl}/{lib.Path}";
 
-                missFiles.Add(new ForgeInstaller.MissFileData
-                {
-                    Name = $"{lib.Name}-{lib.Version}.jar",
-                    Path = libPath,
-                    Url = url,
-                    Sha1 = lib.Hash,
-                });
+                missFiles.Add(new MissFileData(
+                    $"{lib.Name}-{lib.Version}.jar",
+                    libPath,
+                    url,
+                    lib.Hash
+                ));
             }
         }
         return missFiles;
