@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 
 namespace Qomicex.Core.AOT.Services.Installers;
 
-public class NeoForgeInstaller : ForgeInstallerBase, IInstaller
+internal class NeoForgeInstaller : ForgeInstallerBase, IInstaller
 {
     public NeoForgeInstaller(int sourceId, string gameDir, string gameVersion)
     {

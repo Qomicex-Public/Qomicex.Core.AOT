@@ -1,6 +1,6 @@
 namespace Qomicex.Core.AOT.Services.Expansion.Local;
 
-public sealed class DefaultLocalModsFactory : ILocalModsFactory
+internal sealed class DefaultLocalModsFactory : ILocalModsFactory
 {
     private readonly HttpClient _http;
     private readonly string _gameRoot;

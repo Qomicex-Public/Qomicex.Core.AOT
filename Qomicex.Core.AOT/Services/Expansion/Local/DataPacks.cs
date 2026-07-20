@@ -7,7 +7,7 @@ using Qomicex.Core.AOT.Models.Expansion.Modrinth;
 
 namespace Qomicex.Core.AOT.Services.Expansion.Local;
 
-public class DataPacks : LocalResourceBase
+internal class DataPacks : LocalResourceBase
 {
     private readonly string _gameDirectory;
     private readonly string _version;

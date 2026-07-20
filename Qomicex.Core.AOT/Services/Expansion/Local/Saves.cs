@@ -4,7 +4,7 @@ using Qomicex.Core.AOT.Models.Expansion.Local;
 
 namespace Qomicex.Core.AOT.Services.Expansion.Local;
 
-public class Saves : LocalResourceBase
+internal class Saves : LocalResourceBase
 {
     private readonly string _gameDirectory;
     private readonly string _version;

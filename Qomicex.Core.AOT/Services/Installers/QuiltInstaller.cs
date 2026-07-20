@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 
 namespace Qomicex.Core.AOT.Services.Installers;
 
-public class QuiltInstaller : InstallerBase, IInstaller
+internal class QuiltInstaller : InstallerBase, IInstaller
 {
     private string _downloadSource;
     private readonly string _gameDir;

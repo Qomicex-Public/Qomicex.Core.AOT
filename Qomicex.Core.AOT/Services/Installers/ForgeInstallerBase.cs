@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Qomicex.Core.AOT.Services.Installers;
 
-public class ForgeInstallerBase : InstallerBase
+internal class ForgeInstallerBase : InstallerBase
 {
     internal string BaseUrl = string.Empty;
     internal int SourceId;

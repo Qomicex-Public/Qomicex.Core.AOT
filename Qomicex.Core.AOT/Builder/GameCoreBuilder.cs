@@ -5,6 +5,7 @@ using Qomicex.Core.AOT.Interfaces.Services;
 using Qomicex.Core.AOT.Public.Services;
 using Qomicex.Core.AOT.Services;
 using Qomicex.Core.AOT.Services.Expansion;
+using Qomicex.Core.AOT.Services.Expansion.Local;
 using Qomicex.Core.AOT.Services.Installers;
 using Qomicex.Core.AOT.Services.Options;
 
@@ -22,6 +23,8 @@ public sealed class GameCoreBuilder
     private IInstallerProvider? _installerProvider;
     private IOptionsProvider? _optionsProvider;
     private IServerManager? _serverManager;
+    private IInstallerFactory? _installerFactory;
+    private ILocalModsFactory? _localResourceProvider;
 
     public GameCoreBuilder Configure(Action<CoreOptions> configure)
     {
@@ -110,6 +113,18 @@ public sealed class GameCoreBuilder
         return this;
     }
 
+    public GameCoreBuilder WithInstallerFactory(IInstallerFactory installerFactory)
+    {
+        _installerFactory = installerFactory;
+        return this;
+    }
+
+    public GameCoreBuilder WithLocalResourceProvider(ILocalModsFactory localResourceProvider)
+    {
+        _localResourceProvider = localResourceProvider;
+        return this;
+    }
+
     public GameCoreBuilder WithOptionsProvider(IOptionsProvider optionsProvider)
     {
         _optionsProvider = optionsProvider;
@@ -135,6 +150,9 @@ public sealed class GameCoreBuilder
         var installerProvider = _installerProvider ?? new InstallerProvider(http,_options.DownloadMirror);
         var locator = new DefaultVersionLocator(_options.GameRoot, _options.DownloadMirror, http);
 
+        _installerFactory ??= new DefaultInstallerFactory();
+        _localResourceProvider ??= new DefaultLocalModsFactory(http, _options.GameRoot);
+
         if (_options.OptionsJsonPath is not null
             && _options.DescriptionsJsonPath is not null
             && _options.MinecraftManifestPath is not null)
@@ -151,7 +169,7 @@ public sealed class GameCoreBuilder
 
         _serverManager ??= new ServerManager(_options.GameRoot, string.Empty, false);
 
-        return new DefaultGameCore(version, auth, launch, javaProvider, installerProvider, locator, http, _options.GameRoot, _optionsProvider, _serverManager);
+        return new DefaultGameCore(version, auth, launch, javaProvider, installerProvider, locator, http, _options.GameRoot, _optionsProvider, _serverManager, _source, _installerFactory, _localResourceProvider);
     }
 
     private IAuthProvider CreateAuthProvider(HttpClient http)

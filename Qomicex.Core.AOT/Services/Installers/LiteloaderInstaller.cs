@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 
 namespace Qomicex.Core.AOT.Services.Installers;
 
-public class LiteloaderInstaller : InstallerBase, IInstaller
+internal class LiteloaderInstaller : InstallerBase, IInstaller
 {
     private string _baseRepoUrl;
     private readonly int _sourceId;

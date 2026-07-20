@@ -5,7 +5,7 @@ using System.Text.Json.Nodes;
 
 namespace Qomicex.Core.AOT.Services.Installers;
 
-public abstract class InstallerBase
+internal abstract class InstallerBase
 {
     internal static string? DefaultUserAgent { get; set; }
 

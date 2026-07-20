@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 
 namespace Qomicex.Core.AOT.Services.Installers;
 
-public class FabricInstaller : InstallerBase, IInstaller
+internal class FabricInstaller : InstallerBase, IInstaller
 {
     private string _downloadSource;
     private readonly string _gameDir;

@@ -5,7 +5,9 @@ using Qomicex.Core.AOT.Public.Expansion;
 using Qomicex.Core.AOT.Public.Services;
 using Qomicex.Core.AOT.Services.Expansion.CurseForge;
 using Qomicex.Core.AOT.Services.Expansion.FeedTheBeast;
+using Qomicex.Core.AOT.Services.Expansion.Local;
 using Qomicex.Core.AOT.Services.Expansion.Modrinth;
+using Qomicex.Core.AOT.Services.Installers;
 
 namespace Qomicex.Core.AOT.Core;
 
@@ -24,6 +26,9 @@ public sealed class DefaultGameCore : IDisposable
     public IVersionLocator Locator { get; }
     public IOptionsProvider? Options { get; }
     public IServerManager? ServerManager { get; }
+    public IDownloadSourceManager DownloadManager { get; }
+    public IInstallerFactory Installer { get; }
+    public ILocalModsFactory LocalResourceProvider { get; }
 
     internal DefaultGameCore(
         IVersionManagementService version,
@@ -35,7 +40,10 @@ public sealed class DefaultGameCore : IDisposable
         HttpClient http,
         string gameRoot,
         IOptionsProvider? optionsProvider = null,
-        IServerManager? serverManager = null)
+        IServerManager? serverManager = null,
+        IDownloadSourceManager? downloadManager = null,
+        IInstallerFactory? installerFactory = null,
+        ILocalModsFactory? localResourceProvider = null)
     {
         Version = version;
         Auth = auth;
@@ -48,6 +56,9 @@ public sealed class DefaultGameCore : IDisposable
         InstallerProvider = installerProvider;
         Options = optionsProvider;
         ServerManager = serverManager;
+        DownloadManager = downloadManager!;
+        Installer = installerFactory!;
+        LocalResourceProvider = localResourceProvider!;
     }
 
     public IModrinthSource CreateModrinthSource() => new ModrinthBase(_http);

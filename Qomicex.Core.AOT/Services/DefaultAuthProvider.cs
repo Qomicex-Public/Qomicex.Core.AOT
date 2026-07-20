@@ -3,7 +3,7 @@ using Qomicex.Core.AOT.Utils;
 
 namespace Qomicex.Core.AOT.Services;
 
-public sealed class DefaultAuthProvider : IAuthProvider
+internal sealed class DefaultAuthProvider : IAuthProvider
 {
     public Task<AuthResult> AuthenticateAsync(AuthRequest request)
     {

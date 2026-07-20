@@ -1,6 +1,6 @@
 namespace Qomicex.Core.AOT.Services.Installers;
 
-public sealed class DefaultInstallerFactory : IInstallerFactory
+internal sealed class DefaultInstallerFactory : IInstallerFactory
 {
     public IInstaller CreateFabric(int downloadSource, string gameDir)
         => new FabricInstaller(downloadSource, gameDir);

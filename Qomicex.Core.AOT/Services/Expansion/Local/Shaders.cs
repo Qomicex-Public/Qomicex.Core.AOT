@@ -5,7 +5,7 @@ using Qomicex.Core.AOT.Models.Expansion.Modrinth;
 
 namespace Qomicex.Core.AOT.Services.Expansion.Local;
 
-public class Shaders : LocalResourceBase
+internal class Shaders : LocalResourceBase
 {
     private readonly string _gameDirectory;
     private readonly string _version;

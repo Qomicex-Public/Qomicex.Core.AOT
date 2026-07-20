@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 
 namespace Qomicex.Core.AOT.Services.Installers;
 
-public class OptiFineInstaller : InstallerBase, IInstaller
+internal class OptiFineInstaller : InstallerBase, IInstaller
 {
     private readonly string _downloadSource;
     private readonly string _gameDir;

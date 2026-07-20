@@ -5,7 +5,7 @@ using Qomicex.Core.AOT.Services.Expansion.Local;
 
 namespace Qomicex.Core.AOT.Services.Installers;
 
-public class ForgeInstaller : ForgeInstallerBase, IInstaller
+internal class ForgeInstaller : ForgeInstallerBase, IInstaller
 {
     public ForgeInstaller(int sourceId, string gameDir, string gameVersion)
     {
