@@ -12,6 +12,9 @@ public sealed record class CoreOptions
     public string? MicrosoftClientId { get; set; }
     public string? YggdrasilServerUrl { get; set; }
     public AuthOptions AuthOptions { get; set; } = new();
+    public string? OptionsJsonPath { get; set; }
+    public string? DescriptionsJsonPath { get; set; }
+    public string? MinecraftManifestPath { get; set; }
 }
 
 public sealed record class AuthOptions

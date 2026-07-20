@@ -6,6 +6,7 @@ using Qomicex.Core.AOT.Public.Services;
 using Qomicex.Core.AOT.Services;
 using Qomicex.Core.AOT.Services.Expansion;
 using Qomicex.Core.AOT.Services.Installers;
+using Qomicex.Core.AOT.Services.Options;
 
 namespace Qomicex.Core.AOT.Builder;
 
@@ -133,6 +134,22 @@ public sealed class GameCoreBuilder
         var javaProvider = _javaProvider ?? new JavaProvider(http);
         var installerProvider = _installerProvider ?? new InstallerProvider(http,_options.DownloadMirror);
         var locator = new DefaultVersionLocator(_options.GameRoot, _options.DownloadMirror, http);
+
+        if (_options.OptionsJsonPath is not null
+            && _options.DescriptionsJsonPath is not null
+            && _options.MinecraftManifestPath is not null)
+        {
+            var manifest = File.ReadAllText(_options.MinecraftManifestPath);
+            _optionsProvider ??= new OptionsProvider(
+                _options.OptionsJsonPath,
+                _options.DescriptionsJsonPath,
+                manifest,
+                _options.GameRoot,
+                string.Empty,
+                false);
+        }
+
+        _serverManager ??= new ServerManager(_options.GameRoot, string.Empty, false);
 
         return new DefaultGameCore(version, auth, launch, javaProvider, installerProvider, locator, http, _options.GameRoot, _optionsProvider, _serverManager);
     }
