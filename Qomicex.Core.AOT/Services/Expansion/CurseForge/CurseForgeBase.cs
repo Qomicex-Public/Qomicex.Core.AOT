@@ -43,7 +43,9 @@ internal class CurseForgeBase : ICurseForgeSource
         request.Headers.Add("x-api-key", key);
         request.Headers.Accept.Add(MediaTypeWithQualityHeaderValue.Parse("application/json"));
         request.Headers.UserAgent.ParseAdd("QomicexCore/1.0");
+#pragma warning disable IL2026, IL3050
         var jsonData = JsonSerializer.Serialize(data);
+#pragma warning restore IL2026, IL3050
         request.Content = new StringContent(jsonData, Encoding.UTF8, "application/json");
         var response = await _http.SendAsync(request);
         response.EnsureSuccessStatusCode();
@@ -129,7 +131,7 @@ internal class CurseForgeBase : ICurseForgeSource
         if (result == null) throw new InvalidOperationException("CurseForge 响应为空");
 
         var info = result.ToObject(JsonCtx.CurseForgeInfo);
-        return info;
+        return info!;
     }
 
     public async Task<CurseForgeFileInfo> GetFileInfoAsync(string modId, string fileId)
@@ -140,7 +142,7 @@ internal class CurseForgeBase : ICurseForgeSource
         var result = JsonNode.Parse(data)?["data"];
         if (result == null) throw new InvalidOperationException("CurseForge 文件信息响应为空");
 
-        return result.ToObject(JsonCtx.CurseForgeFileInfo);
+        return result.ToObject(JsonCtx.CurseForgeFileInfo)!;
     }
 
     public async Task<string> GetDownloadUrlAsync(string id, string fileId)

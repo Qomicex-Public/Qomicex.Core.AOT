@@ -10,7 +10,7 @@ namespace Qomicex.Core.AOT.Utils
     /// <summary>
     /// 专门给Fabric Json的神秘Time做的转换器
     /// </summary>
-    internal class MinecraftDateTimeConverter : JsonConverter<DateTimeOffset>
+    public class MinecraftDateTimeConverter : JsonConverter<DateTimeOffset>
     {
         public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

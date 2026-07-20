@@ -21,8 +21,20 @@ internal class VersionManifestService : IVersionManifestService
     public async Task<VersionManifestRoot> GetVersionManifestAsync()
     {
         var response = await _httpClient.GetStringAsync(ManifestUrl);
-        return JsonSerializer.Deserialize(response, _ctx.VersionManifestRoot)
+        var root = JsonSerializer.Deserialize(response, _ctx.VersionManifestRoot)
             ?? throw new JsonException("解析版本清单失败");
+
+        root = root with
+        {
+            Versions = root.Versions.Select(v =>
+            {
+                if (v.Type == "snapshot" && v.ReleaseTime.Month == 4 && v.ReleaseTime.Day == 1)
+                    return v with { Type = "april_fools" };
+                return v;
+            }).ToList()
+        };
+
+        return root;
     }
 
     public async Task<CompleteVersionMetadata> GetVersionMetadataAsync(string url)

@@ -118,8 +118,9 @@ public sealed class GameCoreBuilder
         var launch = _launch ?? new LaunchExecutor(_options.LauncherName, _options.GameRoot);
         var javaProvider = _javaProvider ?? new JavaProvider(http);
         var installerProvider = _installerProvider ?? new InstallerProvider(http,_options.DownloadMirror);
+        var locator = new DefaultVersionLocator(_options.GameRoot, _options.DownloadMirror, http);
 
-        return new DefaultGameCore(version, auth, launch,javaProvider,installerProvider, http, _options.GameRoot);
+        return new DefaultGameCore(version, auth, launch,javaProvider,installerProvider, locator, http, _options.GameRoot);
     }
 
     private IAuthProvider CreateAuthProvider(HttpClient http)

@@ -39,7 +39,9 @@ internal class ModrinthBase : IModrinthSource
         if (!url.StartsWith("http"))
             url = _baseUrl + url;
 
+#pragma warning disable IL2026, IL3050
         var jsonData = JsonSerializer.Serialize(data);
+#pragma warning restore IL2026, IL3050
         var content = new StringContent(jsonData, Encoding.UTF8, "application/json");
         var response = await _http.PostAsync(url, content);
         response.EnsureSuccessStatusCode();
@@ -56,7 +58,6 @@ internal class ModrinthBase : IModrinthSource
         int page = 0,
         int pageSize = 20)
     {
-        ArgumentException.ThrowIfNullOrEmpty(query);
         ArgumentOutOfRangeException.ThrowIfNegative(pageSize, nameof(pageSize));
         if (pageSize > 100) throw new ArgumentOutOfRangeException(nameof(pageSize), "每页数量最大 100");
 

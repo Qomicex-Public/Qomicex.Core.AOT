@@ -8,8 +8,8 @@ public interface IAuthProvider
 
     Task InvalidateAsync(string accessToken);
 
-    Task<DeviceCodeResult?> StartDeviceCodeAsync() => null;
-    Task<PollTokenResult?> PollForTokenAsync(string deviceCode) => null;
+    Task<DeviceCodeResult?> StartDeviceCodeAsync() => Task.FromResult<DeviceCodeResult?>(null);
+    Task<PollTokenResult?> PollForTokenAsync(string deviceCode) => Task.FromResult<PollTokenResult?>(null);
     Task<AuthResult> CompleteLoginAsync(string accessToken, string refreshToken) =>
         Task.FromResult(new AuthResult { Success = false, ErrorMessage = "此认证方式不支持设备码登录" });
     Task<AuthResult> RefreshLoginAsync(string refreshToken) =>

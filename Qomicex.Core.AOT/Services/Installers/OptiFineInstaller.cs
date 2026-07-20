@@ -74,7 +74,9 @@ public class OptiFineInstaller : InstallerBase, IInstaller
         string json = await client.GetStringAsync(url);
         if (string.IsNullOrEmpty(json)) return [];
 
+#pragma warning disable IL2026, IL3050
         var versions = JsonSerializer.Deserialize<List<OptiFineVersionInfo>>(json);
+#pragma warning restore IL2026, IL3050
         if (versions != null)
             versions.Sort((a, b) => string.Compare(b.Patch, a.Patch, StringComparison.Ordinal));
         return versions ?? [];
@@ -123,15 +125,15 @@ public class OptiFineInstaller : InstallerBase, IInstaller
         if (baseJson["libraries"] is JsonArray baseLibraries)
         {
             foreach (var lib in baseLibraries)
-                ((JsonArray)newJson["libraries"]!).Add(lib);
+                ((JsonArray)newJson["libraries"]!).Add((JsonNode)lib!);
         }
 
-        ((JsonArray)newJson["libraries"]!).Add(new JsonObject
+        ((JsonArray)newJson["libraries"]!).Add((JsonNode)new JsonObject
         {
             ["name"] = $"optifine:OptiFine:{_gameVersion}_{optiVersion.Type}_{optiVersion.Patch}",
         });
 
-        ((JsonArray)newJson["libraries"]!).Add(new JsonObject
+        ((JsonArray)newJson["libraries"]!).Add((JsonNode)new JsonObject
         {
             ["name"] = "net.minecraft:launchwrapper:1.12",
         });

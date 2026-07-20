@@ -234,22 +234,40 @@ internal class DefaultVersionLocator : IVersionLocator
 
     private async Task DownloadAssetIndexAsync(AssetIndex assetIndex, string indexPath)
     {
-        var url = assetIndex.Url;
+        var urls = new List<string> { assetIndex.Url };
         if (!string.IsNullOrEmpty(_downloadSource.assetsIndexSource))
         {
-            url = url.Replace("https://piston-meta.mojang.com/", _downloadSource.assetsIndexSource)
+            var mirrorUrl = assetIndex.Url
+                .Replace("https://piston-meta.mojang.com/", _downloadSource.assetsIndexSource)
                 .Replace("https://launchermeta.mojang.com/", _downloadSource.assetsIndexSource)
                 .Replace("https://launcher.mojang.com/", _downloadSource.assetsIndexSource)
                 .Replace("http://", "https://");
+            if (mirrorUrl != assetIndex.Url)
+                urls.Insert(0, mirrorUrl);
         }
 
-        var response = await _httpClient.GetAsync(url);
-        if (!response.IsSuccessStatusCode)
-            throw new Exception($"下载资源索引失败: {response.ReasonPhrase}");
+        Exception? lastEx = null;
+        foreach (var url in urls)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync(url);
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    Directory.CreateDirectory(Path.GetDirectoryName(indexPath)!);
+                    await File.WriteAllTextAsync(indexPath, content);
+                    return;
+                }
+                lastEx = new Exception($"下载资源索引失败 ({url}): {response.ReasonPhrase}");
+            }
+            catch (Exception ex)
+            {
+                lastEx = new Exception($"下载资源索引失败 ({url}): {ex.Message}");
+            }
+        }
 
-        var content = await response.Content.ReadAsStringAsync();
-        Directory.CreateDirectory(Path.GetDirectoryName(indexPath)!);
-        await File.WriteAllTextAsync(indexPath, content);
+        throw lastEx ?? new Exception("所有镜像均无法下载资源索引");
     }
 
     public async Task<List<MissFileInfo>> GetMissFilesAsync(CompleteVersionMetadata meta)
