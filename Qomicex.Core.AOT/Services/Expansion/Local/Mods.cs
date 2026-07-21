@@ -4,7 +4,9 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Qomicex.Core.AOT.Models.Expansion.CurseForge;
 using Qomicex.Core.AOT.Models.Expansion.Local;
+using Qomicex.Core.AOT.Models.Expansion.Modrinth;
 using Tomlyn;
 using Tomlyn.Model;
 
@@ -198,7 +200,7 @@ public class Mods : LocalResourceBase
                 foreach (var (key, value) in cfResult)
                     cfDict[key] = value;
             }
-            catch { }
+            catch (Exception ex) { Trace.WriteLine($"[Mods] CF hash lookup failed: {ex.GetType().Name}: {ex.Message}"); }
 
             try
             {
@@ -207,15 +209,15 @@ public class Mods : LocalResourceBase
                 foreach (var (key, value) in mrResult)
                     mrDict[key] = value;
             }
-            catch { }
+            catch (Exception ex) { Trace.WriteLine($"[Mods] MR hash lookup failed: {ex.GetType().Name}: {ex.Message}"); }
         }
 
         foreach (var modInfo in modInfos)
         {
-            if (modInfo.CFHash != 0 && cfDict.ContainsKey(modInfo.CFHash))
-                modInfo.CurseForgeId = (int)modInfo.CFHash;
-            if (mrDict.ContainsKey(modInfo.Sha1Hash))
-                modInfo.ModrinthId = modInfo.Sha1Hash;
+            if (cfDict.TryGetValue(modInfo.CFHash, out var cfObj) && cfObj is FingerprintsFilesMeta { ModId: > 0 } cfMeta)
+                modInfo.CurseForgeId = cfMeta.ModId;
+            if (mrDict.TryGetValue(modInfo.Sha1Hash, out var mrObj) && mrObj is ProjectVersionInfo mrMeta)
+                modInfo.ModrinthId = mrMeta.ProjectId ?? "";
         }
 
         var iconTasks = modInfos

@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Qomicex.Core.AOT.JsonContext;
+using Qomicex.Core.AOT.Models;
 
 namespace Qomicex.Core.AOT.Services.Installers;
 
@@ -76,10 +78,7 @@ internal class OptiFineInstaller : InstallerBase, IInstaller
         string url = $"{_downloadSource}/{_gameVersion}";
         string json = await client.GetStringAsync(url);
         if (string.IsNullOrEmpty(json)) return [];
-
-#pragma warning disable IL2026, IL3050
-        var versions = JsonSerializer.Deserialize<List<OptiFineVersionInfo>>(json);
-#pragma warning restore IL2026, IL3050
+        var versions = JsonSerializer.Deserialize(json, CombinedJsonContext.Default.ListOptiFineVersionInfo);
         if (versions != null)
             versions.Sort((a, b) => string.Compare(b.Patch, a.Patch, StringComparison.Ordinal));
         return versions ?? [];
@@ -201,13 +200,5 @@ internal class OptiFineInstaller : InstallerBase, IInstaller
     private static void CleanupTempFiles(string installerPath)
     {
         try { if (File.Exists(installerPath)) File.Delete(installerPath); } catch { }
-    }
-
-    public class OptiFineVersionInfo
-    {
-        public string? Type { get; set; }
-        public string? Patch { get; set; }
-        public string? FileName { get; set; }
-        public string? McVersion { get; set; }
     }
 }

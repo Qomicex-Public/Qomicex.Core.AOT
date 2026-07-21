@@ -170,7 +170,7 @@ public sealed class ServerManager : IServerManager
         {
             return QueryModernServerState(endpoint, state, out tcpConnected);
         }
-        catch (Exception ex) when (ex is SocketException or IOException or InvalidDataException or JsonException or FormatException or TimeoutException)
+        catch (Exception ex) when (ex is SocketException or IOException or InvalidDataException or JsonException or FormatException or TimeoutException or OperationCanceledException)
         {
             if (tcpConnected && ShouldFallbackToLegacy(ex))
             {
@@ -937,6 +937,15 @@ public sealed class ServerManager : IServerManager
         if (response.TryGetProperty("description", out var description))
         {
             state.Description = FlattenDescription(description).Trim();
+        }
+
+        if (response.TryGetProperty("favicon", out var favicon))
+        {
+            var faviconStr = favicon.GetString();
+            if (!string.IsNullOrEmpty(faviconStr) && faviconStr.StartsWith("data:image/png;base64,", StringComparison.Ordinal))
+            {
+                state.IconBase64 = faviconStr["data:image/png;base64,".Length..];
+            }
         }
     }
 

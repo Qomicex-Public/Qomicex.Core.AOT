@@ -14,6 +14,7 @@ namespace Qomicex.Core.AOT.JsonContext;
 [JsonSerializable(typeof(CurseForgeFilesMeta))]
 [JsonSerializable(typeof(CurseForgeDependenciesMeta))]
 [JsonSerializable(typeof(FingerprintsFilesMeta))]
+[JsonSerializable(typeof(FingerprintsRequest))]
 [JsonSerializable(typeof(CategoryMeta))]
 [JsonSerializable(typeof(AuthorMeta))]
 [JsonSerializable(typeof(ScreenshotsMeta))]

@@ -36,16 +36,13 @@ internal class CurseForgeBase : ICurseForgeSource
         return await response.Content.ReadAsStringAsync();
     }
 
-    private async Task<string> PostData(string url, string key, object data)
+    private async Task<string> PostData(string url, string key, string jsonData)
     {
         var fullUrl = url.StartsWith("http") ? url : _baseUrl + url;
         using var request = new HttpRequestMessage(HttpMethod.Post, fullUrl);
         request.Headers.Add("x-api-key", key);
         request.Headers.Accept.Add(MediaTypeWithQualityHeaderValue.Parse("application/json"));
         request.Headers.UserAgent.ParseAdd("QomicexCore/1.0");
-#pragma warning disable IL2026, IL3050
-        var jsonData = JsonSerializer.Serialize(data);
-#pragma warning restore IL2026, IL3050
         request.Content = new StringContent(jsonData, Encoding.UTF8, "application/json");
         var response = await _http.SendAsync(request);
         response.EnsureSuccessStatusCode();
@@ -165,7 +162,8 @@ internal class CurseForgeBase : ICurseForgeSource
         ArgumentNullException.ThrowIfNull(hashes);
         if (hashes.Count == 0) return [];
 
-        var data = await PostData("/v1/fingerprints", _apiKey, new { fingerprints = hashes });
+        var jsonData = JsonSerializer.Serialize(new FingerprintsRequest(hashes), JsonCtx.FingerprintsRequest);
+        var data = await PostData("/v1/fingerprints", _apiKey, jsonData);
         var exactMatches = JsonNode.Parse(data)?["data"]?["exactMatches"] as JsonArray;
         if (exactMatches == null) return [];
 

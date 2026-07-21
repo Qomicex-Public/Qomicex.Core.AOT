@@ -101,6 +101,7 @@ public sealed record class ServerState
     public string Version { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string ErrorMessage { get; set; } = string.Empty;
+    public string? IconBase64 { get; set; }
 }
 
 public sealed record class LanServerEntry

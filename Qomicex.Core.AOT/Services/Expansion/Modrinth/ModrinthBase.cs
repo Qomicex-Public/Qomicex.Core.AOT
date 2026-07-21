@@ -34,14 +34,11 @@ internal class ModrinthBase : IModrinthSource
         return await response.Content.ReadAsStringAsync();
     }
 
-    private async Task<string> PostDataAsync(string url, object data)
+    private async Task<string> PostDataAsync(string url, string jsonData)
     {
         if (!url.StartsWith("http"))
             url = _baseUrl + url;
 
-#pragma warning disable IL2026, IL3050
-        var jsonData = JsonSerializer.Serialize(data);
-#pragma warning restore IL2026, IL3050
         var content = new StringContent(jsonData, Encoding.UTF8, "application/json");
         var response = await _http.PostAsync(url, content);
         response.EnsureSuccessStatusCode();
@@ -96,11 +93,11 @@ internal class ModrinthBase : IModrinthSource
     {
         ArgumentException.ThrowIfNullOrEmpty(projectId);
         var response = await GetDataAsync($"{_baseUrl}v2/project/{Uri.EscapeDataString(projectId)}/version");
-        var dict = JsonSerializer.Deserialize(response, JsonCtx.ModrinthVersionResponse);
-        return dict?.Values.Select(v => new ProjectVersionInfo(
+        var list = JsonSerializer.Deserialize(response, JsonCtx.ListVersionInfo);
+        return list?.Select(v => new ProjectVersionInfo(
             v.Id, v.ProjectId, v.Name, v.VersionNumber,
-            v.GameVersions, v.Loaders, null, v.DatePublished,
-            0, null, null, null
+            v.GameVersionIds, v.Loaders, v.Changelog, v.PublishedAt,
+            v.DownloadCount, null, v.Files, v.DependenciesInfos
         )).ToList() ?? [];
     }
 
@@ -123,7 +120,8 @@ internal class ModrinthBase : IModrinthSource
         ArgumentNullException.ThrowIfNull(hashes);
         if (hashes.Count == 0) return [];
 
-        var response = await PostDataAsync($"{_baseUrl}v2/version_files", new { hashes, algorithm = "sha1" });
+        var jsonData = JsonSerializer.Serialize(new VersionFilesRequest(hashes), JsonCtx.VersionFilesRequest);
+        var response = await PostDataAsync($"{_baseUrl}v2/version_files", jsonData);
         var dict = JsonSerializer.Deserialize(response, JsonCtx.DictionaryStringModrinthVersionInfo);
         if (dict == null) return [];
 
