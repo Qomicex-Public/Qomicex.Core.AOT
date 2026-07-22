@@ -76,7 +76,13 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
         jsonData = versionData.ToString();
 
         if (!string.IsNullOrEmpty(inheritsFromJson))
+        {
             jsonData = MergeVersionJson(inheritsFromJson, jsonData, versionId);
+            // MergeVersionJson 会删除 inheritsFrom，补写 clientVersion 以保留原版版本信息
+            var mergedObj = JsonNode.Parse(jsonData)!.AsObject();
+            mergedObj["clientVersion"] = this.gameVersion;
+            jsonData = mergedObj.ToString();
+        }
 
 
         var versionDir = Path.Combine(this.gameDir, "versions", versionId);
@@ -202,8 +208,13 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
         jsonData = versionData.ToString();
 
         if (!string.IsNullOrEmpty(inheritsFromJson))
+        {
             jsonData = MergeVersionJson(inheritsFromJson, jsonData, versionId);
-
+            var mergedObj = JsonNode.Parse(jsonData)!.AsObject();
+            mergedObj["clientVersion"] = this.gameVersion;
+            jsonData = mergedObj.ToString();
+        }
+        
         var versionDir = Path.Combine(this.gameDir, "versions", versionId);
         if (!Directory.Exists(versionDir))
         {
@@ -213,7 +224,7 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
         string targetJsonPath = Path.Combine(versionDir, $"{versionId}.json");
         File.WriteAllText(targetJsonPath, jsonData);
         backFiles.Add(targetJsonPath);
-
+        
         var jarMavenPath = MavenToPath(installProfileJson!["install"]?["path"]?.ToString()! ?? installProfileJson!["path"]?.ToString()!);
         var filePath = installProfileJson!["install"]?["filePath"]?.ToString() ?? $@"maven/{MavenToPath(installProfileJson!["path"]?.ToString()!)}";
         var forgeJar = ReadSpecifyFileFromZip(forgeInstallerPath, filePath!);

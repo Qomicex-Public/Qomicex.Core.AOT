@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 
 namespace Qomicex.Core.AOT.Utils;
 
-internal static class GameVersionHelper
+public static class GameVersionHelper
 {
     private const int CONSTANT_UTF8 = 1;
     private const int CONSTANT_INTEGER = 3;

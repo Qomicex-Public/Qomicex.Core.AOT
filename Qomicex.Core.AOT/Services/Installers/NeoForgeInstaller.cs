@@ -68,7 +68,13 @@ internal class NeoForgeInstaller : ForgeInstallerBase, IInstaller
         jsonData = versionData.ToJsonString();
 
         if (!string.IsNullOrEmpty(inheritsFromJson))
+        {
             jsonData = MergeVersionJson(inheritsFromJson, jsonData, versionId);
+            // MergeVersionJson 会删除 inheritsFrom，补写 clientVersion 以保留原版版本信息
+            var mergedObj = JsonNode.Parse(jsonData)!.AsObject();
+            mergedObj["clientVersion"] = this.gameVersion;
+            jsonData = mergedObj.ToJsonString();
+        }
 
         var versionDir = Path.Combine(this.gameDir, "versions", versionId);
         if (!Directory.Exists(versionDir))
