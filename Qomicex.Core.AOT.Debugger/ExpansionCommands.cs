@@ -94,9 +94,9 @@ internal static class ExpansionCommands
                 FireAsync(async () =>
                 {
                     var cf = core.CreateCurseForgeSource(apiKey);
-                    var results = await cf.SearchAsync(query, gameVersions: ver != null ? [ver] : null, categories: null, modLoaderTypes: loader != null ? [loader] : null);
-                    Trace.TraceInformation($"CurseForge 搜索结果 ({results.Count}):");
-                    foreach (var r in results.Take(10))
+                    var response = await cf.SearchAsync(query, gameVersions: ver != null ? [ver] : null, categories: null, modLoaderTypes: loader != null ? [loader] : null);
+                    Trace.TraceInformation($"CurseForge 搜索结果 ({response.TotalCount} total, showing {response.Results.Count}):");
+                    foreach (var r in response.Results.Take(10))
                         Trace.TraceInformation($"  {r.Id,-10} {r.Name,-30} {r.DownloadCount,8}");
                 });
                 break;

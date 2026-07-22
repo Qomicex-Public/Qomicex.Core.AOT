@@ -49,7 +49,7 @@ internal class CurseForgeBase : ICurseForgeSource
         return await response.Content.ReadAsStringAsync();
     }
 
-    public async Task<List<CurseForgeSearchResult>> SearchAsync(
+    public async Task<CurseForgeSearchResponse> SearchAsync(
         string searchFilter,
         string[]? gameVersions,
         int?[]? categories,
@@ -72,8 +72,10 @@ internal class CurseForgeBase : ICurseForgeSource
         var url = $"{_baseUrl}/v1/mods/search?gameId=432{cls}&searchFilter={searchFilter}&sortOrder=desc&gameVersions=[{versions}]&pageSize={ps}&index={index}{cats}&modLoaderTypes=[{modLoaders}]&sortField={sortField}";
 
         var data = await GetData(url, _apiKey);
-        var result = JsonNode.Parse(data)?["data"] as JsonArray;
-        if (result == null) return [];
+        var root = JsonNode.Parse(data);
+        var result = root?["data"] as JsonArray;
+        var totalCount = root?["pagination"]?["totalCount"]?.GetValue<int>() ?? 0;
+        if (result == null) return new CurseForgeSearchResponse([], 0);
 
         var results = new List<CurseForgeSearchResult>();
         foreach (var mod in result)
@@ -119,7 +121,7 @@ internal class CurseForgeBase : ICurseForgeSource
                 ))
             });
         }
-        return results;
+        return new CurseForgeSearchResponse(results, totalCount);
     }
 
     public async Task<CurseForgeInfo> GetModInfoAsync(string id)

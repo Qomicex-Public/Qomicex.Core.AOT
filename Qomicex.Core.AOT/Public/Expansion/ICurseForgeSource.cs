@@ -4,7 +4,7 @@ namespace Qomicex.Core.AOT.Public.Expansion;
 
 public interface ICurseForgeSource
 {
-    Task<List<CurseForgeSearchResult>> SearchAsync(
+    Task<CurseForgeSearchResponse> SearchAsync(
         string searchFilter,
         string[]? gameVersions,
         int?[]? categories,
