@@ -56,7 +56,8 @@ internal class CurseForgeBase : ICurseForgeSource
         string[]? modLoaderTypes,
         int? sortField = 1,
         int? page = 1,
-        int? pageSize = 25)
+        int? pageSize = 25,
+        int? classId = null)
     {
         var p = page ?? 1;
         var ps = pageSize ?? 25;
@@ -67,7 +68,8 @@ internal class CurseForgeBase : ICurseForgeSource
         var modLoaders = string.Join(",", modLoaderTypes ?? []);
         var cats = categories is { Length: > 0 } ? $"&categoryIds=[{string.Join(",", categories)}]" : "";
         var versions = string.Join(",", (gameVersions ?? []).Select(v => $"\"{v}\""));
-        var url = $"{_baseUrl}/v1/mods/search?gameId=432&searchFilter={searchFilter}&sortOrder=desc&gameVersions=[{versions}]&pageSize={ps}&index={index}{cats}&modLoaderTypes=[{modLoaders}]&sortField={sortField}";
+        var cls = classId.HasValue ? $"&classId={classId.Value}" : "";
+        var url = $"{_baseUrl}/v1/mods/search?gameId=432{cls}&searchFilter={searchFilter}&sortOrder=desc&gameVersions=[{versions}]&pageSize={ps}&index={index}{cats}&modLoaderTypes=[{modLoaders}]&sortField={sortField}";
 
         var data = await GetData(url, _apiKey);
         var result = JsonNode.Parse(data)?["data"] as JsonArray;

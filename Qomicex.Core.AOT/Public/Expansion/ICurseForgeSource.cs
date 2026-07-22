@@ -11,7 +11,8 @@ public interface ICurseForgeSource
         string[]? modLoaderTypes,
         int? sortField = 1,
         int? page = 1,
-        int? pageSize = 25
+        int? pageSize = 25,
+        int? classId = null
     );
 
     Task<CurseForgeInfo> GetModInfoAsync(string id);
