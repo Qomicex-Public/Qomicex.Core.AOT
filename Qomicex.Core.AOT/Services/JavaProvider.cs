@@ -887,7 +887,8 @@ namespace Qomicex.Core.AOT.Services
                 {
                     if (line.StartsWith("JAVA_VERSION="))
                     {
-                        javaInfo = javaInfo with { Version = line.Split('=')[1].Trim('"'), MajorVersion = GetNormalizedMajorVersion(javaInfo.Version), Name = $"Java {javaInfo.Version}" };
+                        var version = line.Split('=')[1].Trim('"');
+                        javaInfo = javaInfo with { Version = version, MajorVersion = GetNormalizedMajorVersion(version), Name = $"Java {version}" };
                     }
                     else if (line.StartsWith("JAVA_RUNTIME_NAME="))
                     {
@@ -912,13 +913,15 @@ namespace Qomicex.Core.AOT.Services
 
                 if (javaInfo.Type == JavaType.Unknown)
                 {
+                    var javac = OperatingSystem.IsWindows() ? "javac.exe" : "javac";
                     if (Directory.Exists(Path.Combine(javaHome, "jre")) ||
-                        Directory.Exists(Path.Combine(javaHome, "include")))
+                        Directory.Exists(Path.Combine(javaHome, "include")) ||
+                        File.Exists(Path.Combine(javaHome, "bin", javac)))
                         javaInfo = javaInfo with { Type = JavaType.JDK };
                     else
                         javaInfo = javaInfo with { Type = JavaType.JRE };
                 }
-                javaInfo = javaInfo with { Type = JavaType.JDK ,State = JavaState.Valid };
+                javaInfo = javaInfo with { State = JavaState.Valid };
             }
             catch
             {
@@ -974,7 +977,8 @@ namespace Qomicex.Core.AOT.Services
                             var match = System.Text.RegularExpressions.Regex.Match(line, @"""(\d+(:?\.\d+)*)""");
                             if (match.Success)
                             {
-                                javaInfo = javaInfo with { Version = match.Groups[1].Value, MajorVersion = GetNormalizedMajorVersion(javaInfo.Version), Name = $"Java {javaInfo.Version} (未验证)" };
+                                var version = match.Groups[1].Value;
+                                javaInfo = javaInfo with { Version = version, MajorVersion = GetNormalizedMajorVersion(version), Name = $"Java {version} (未验证)" };
                                 break;
                             }
                         }
