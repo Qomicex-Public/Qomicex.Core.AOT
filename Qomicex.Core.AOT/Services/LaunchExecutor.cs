@@ -154,6 +154,21 @@ namespace Qomicex.Core.AOT.Services
             });
         }
 
+        private static string GetNativePath(Library native)
+        {
+            if (native.Natives != null && native.Downloads?.Classifiers != null)
+            {
+                var osName = SystemHelper.GetCurrentOsName();
+                if (native.Natives.TryGetValue(osName, out var classifierTemplate))
+                {
+                    var key = classifierTemplate.Replace("${arch}", SystemHelper.GetCurrentArch());
+                    if (native.Downloads.Classifiers.TryGetValue(key, out var artifact))
+                        return artifact.Path;
+                }
+            }
+            return LibHelper.MavenToPath(native.Name);
+        }
+
         private bool UnzipNatives(LaunchOptions options)
         {
             var natives = GetNatives(options);
@@ -164,7 +179,7 @@ namespace Qomicex.Core.AOT.Services
                 // 逐个解压natives JAR到natives目录（保留JAR内部目录结构）
                 foreach (var native in natives)
                 {
-                    string zipFilePath = Path.Combine(_gameDir, "libraries", LibHelper.MavenToPath(native.Name));
+                    string zipFilePath = Path.Combine(_gameDir, "libraries", GetNativePath(native));
                     if (System.IO.File.Exists(zipFilePath))
                     {
                         FileHelper.Unzip(zipFilePath, nativesDir);
@@ -193,7 +208,7 @@ namespace Qomicex.Core.AOT.Services
                 Directory.CreateDirectory(javaLibDir);
                 foreach (var native in natives)
                 {
-                    string zipFilePath = Path.Combine(_gameDir, "libraries", LibHelper.MavenToPath(native.Name));
+                    string zipFilePath = Path.Combine(_gameDir, "libraries", GetNativePath(native));
                     if (System.IO.File.Exists(zipFilePath))
                     {
                         FileHelper.Unzip(zipFilePath, javaLibDir);

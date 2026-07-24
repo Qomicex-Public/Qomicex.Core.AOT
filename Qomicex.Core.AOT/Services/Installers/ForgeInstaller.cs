@@ -67,7 +67,8 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
         string profileName = string.IsNullOrEmpty(installProfileJson["profile"]?.ToString())
             ? installProfileJson["install"]?["profileName"]?.ToString() ?? string.Empty
             : installProfileJson["profile"]?.ToString()!;
-        if (profileName != "forge")
+        Trace.WriteLine($"[ForgeInstaller] InstallForge 检测到 profileName={profileName}");
+        if (!string.Equals(profileName, "forge", StringComparison.OrdinalIgnoreCase))
             throw new Exception("安装器版本不正确，请检查安装器文件是否正确");
 
         var versionData = JsonNode.Parse(jsonData!)!.AsObject();
@@ -194,12 +195,20 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
         var installProfileJson = JsonNode.Parse(installProfileData!)!.AsObject();
 
         if (string.IsNullOrEmpty(jsonData))
+        {
+            Trace.WriteLine("[ForgeInstaller] InstallLegacyForge 未找到 version.json，使用 install_profile.json 中的 versionInfo");
             jsonData = installProfileJson["versionInfo"]?.ToString() ?? throw new Exception("无法找到版本Json信息");
+        }
+        else
+        {
+            Trace.WriteLine("[ForgeInstaller] InstallLegacyForge 使用安装包内的 version.json");
+        }
 
         string profileName = string.IsNullOrEmpty(installProfileJson["profile"]?.ToString())
             ? installProfileJson["install"]?["profileName"]?.ToString() ?? string.Empty
             : installProfileJson["profile"]?.ToString()!;
-        if (profileName != "forge")
+        Trace.WriteLine($"[ForgeInstaller] InstallLegacyForge 检测到 profileName={profileName}");
+        if (!string.Equals(profileName, "forge", StringComparison.OrdinalIgnoreCase))
             throw new Exception("安装器版本不正确，请检查安装器文件是否正确");
 
         var versionData = JsonNode.Parse(jsonData!)!.AsObject();
@@ -260,7 +269,8 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
         string profileName = string.IsNullOrEmpty(installProfileJson["profile"]?.ToString())
             ? installProfileJson["install"]?["profileName"]?.ToString() ?? string.Empty
             : installProfileJson["profile"]?.ToString()!;
-        if (profileName != "forge")
+        Trace.WriteLine($"[ForgeInstaller] IsLegacyForgeInstaller 检测到 profileName={profileName}");
+        if (!string.Equals(profileName, "forge", StringComparison.OrdinalIgnoreCase))
             throw new Exception("安装器版本不正确");
         bool hasProcessors = installProfileJson.ContainsKey("processors") && installProfileJson["processors"]!.AsArray().Count > 0;
         return !hasProcessors;
