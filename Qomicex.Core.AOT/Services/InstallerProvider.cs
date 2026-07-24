@@ -705,8 +705,9 @@ namespace Qomicex.Core.AOT.Services
 
         private async Task<List<ModLoaderResult>> GetForgeVersionsFromOfficialHtml(string minecraftVersion)
         {
+            var forgeMcVersion = minecraftVersion.Replace('-', '_');
             var forgeLoaders = new List<ModLoaderResult>();
-            var cacheFilePath = GetCacheFilePath(minecraftVersion);
+            var cacheFilePath = GetCacheFilePath(forgeMcVersion);
             const int cacheExpiryHours = 24;
 
             if (File.Exists(cacheFilePath) &&
@@ -715,7 +716,7 @@ namespace Qomicex.Core.AOT.Services
                 try
                 {
                     var cachedHtml = File.ReadAllText(cacheFilePath);
-                    return ParseForgeVersions(minecraftVersion, cachedHtml);
+                    return ParseForgeVersions(minecraftVersion, forgeMcVersion, cachedHtml);
                 }
                 catch (Exception ex)
                 {
@@ -725,7 +726,7 @@ namespace Qomicex.Core.AOT.Services
 
             var sourceUrls = new List<string>
             {
-                $"https://files.minecraftforge.net/net/minecraftforge/forge/index_{minecraftVersion}.html"
+                $"https://files.minecraftforge.net/net/minecraftforge/forge/index_{forgeMcVersion}.html"
             };
 
             foreach (var url in sourceUrls)
@@ -755,7 +756,7 @@ namespace Qomicex.Core.AOT.Services
                         Trace.WriteLine($"缓存写入失败: {ex.Message}");
                     }
 
-                    var result = ParseForgeVersions(minecraftVersion, htmlContent);
+                    var result = ParseForgeVersions(minecraftVersion, forgeMcVersion, htmlContent);
                     if (result.Any())
                         return result;
                 }
@@ -771,7 +772,7 @@ namespace Qomicex.Core.AOT.Services
                 {
                     var cachedHtml = File.ReadAllText(cacheFilePath);
                     Trace.WriteLine($"读取已缓存html到{cacheFilePath}中的数据");
-                    return ParseForgeVersions(minecraftVersion, cachedHtml);
+                    return ParseForgeVersions(minecraftVersion, forgeMcVersion, cachedHtml);
                 }
                 catch (Exception ex)
                 {
@@ -782,7 +783,7 @@ namespace Qomicex.Core.AOT.Services
             return forgeLoaders;
         }
 
-        private static List<ModLoaderResult> ParseForgeVersions(string minecraftVersion, string htmlContent)
+        private static List<ModLoaderResult> ParseForgeVersions(string minecraftVersion, string forgeMcVersion, string htmlContent)
         {
             var forgeLoaders = new List<ModLoaderResult>();
 
@@ -821,7 +822,7 @@ namespace Qomicex.Core.AOT.Services
                 var categoryMatch = Regex.Match(rowHtml, @"classifier-(installer|universal|client)", RegexOptions.IgnoreCase);
                 var fileCategory = categoryMatch.Success ? categoryMatch.Groups[1].Value : "installer";
 
-                var urlPattern = $@"href=""([^""]*?forge-(?:{Regex.Escape(minecraftVersion)}|.{Regex.Escape(minecraftVersion)})-{Regex.Escape(forgeVersion)}.*?{fileCategory}\.(jar|zip)[^""]*)""";
+                var urlPattern = $@"href=""([^""]*?forge-(?:{Regex.Escape(minecraftVersion)}|{Regex.Escape(forgeMcVersion)}|.{Regex.Escape(minecraftVersion)})-{Regex.Escape(forgeVersion)}.*?{fileCategory}\.(jar|zip)[^""]*)""";
                 var urlMatch = Regex.Match(rowHtml, urlPattern, RegexOptions.IgnoreCase);
                 if (!urlMatch.Success)
                 {
@@ -880,7 +881,7 @@ namespace Qomicex.Core.AOT.Services
                 return string.Empty;
             return _mirror == DownloadMirror.BMCLAPI
                 ? $"https://bmclapi2.bangbang93.com/forge/download/{forgeVersion}"
-                : $"https://maven.minecraftforge.net/net/minecraftforge/forge/{mcVersion}-{forgeVersion}/forge-{mcVersion}-{forgeVersion}-installer.jar";
+                : $"https://maven.minecraftforge.net/net/minecraftforge/forge/{mcVersion.Replace('-', '_')}-{forgeVersion}/forge-{mcVersion.Replace('-', '_')}-{forgeVersion}-installer.jar";
         }
 
         private static bool IsRecommendedVersion(string buildNumber, List<ModLoaderResult> existingLoaders)
