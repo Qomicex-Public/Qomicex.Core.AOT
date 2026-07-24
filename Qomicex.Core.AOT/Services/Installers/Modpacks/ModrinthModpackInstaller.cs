@@ -23,6 +23,9 @@ internal sealed class ModrinthModpackInstaller : InstallerBase, IInstaller
         return Task.CompletedTask;
     }
 
+    Task<List<MissFileData>> IInstaller.GetMissLibrariesAsync(string? para1, string? para2, string? para3)
+        => Task.FromResult(new List<MissFileData>());
+
     internal ModrinthModpackInfo GetModpackInfo(string versionId)
     {
         var info = new ModrinthModpackInfo();

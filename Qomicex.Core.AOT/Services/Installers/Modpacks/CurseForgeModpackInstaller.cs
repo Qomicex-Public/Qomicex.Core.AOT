@@ -23,6 +23,9 @@ internal sealed class CurseForgeModpackInstaller : InstallerBase, IInstaller
         return Task.CompletedTask;
     }
 
+    Task<List<MissFileData>> IInstaller.GetMissLibrariesAsync(string? para1, string? para2, string? para3)
+        => Task.FromResult(new List<MissFileData>());
+
     public CurseForgeModpackInfo GetModpackInfo()
     {
         var info = new CurseForgeModpackInfo();
