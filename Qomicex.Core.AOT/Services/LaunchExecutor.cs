@@ -108,8 +108,7 @@ namespace Qomicex.Core.AOT.Services
                     try
                     {
                         var logDir = System.IO.Path.Combine(
-                            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                            "qomicex-launcher", "logs");
+                            GetDataDir(), "logs");
                         System.IO.Directory.CreateDirectory(logDir);
                         System.IO.File.AppendAllText(
                             System.IO.Path.Combine(logDir, "launch-errors.log"),
@@ -776,6 +775,26 @@ namespace Qomicex.Core.AOT.Services
             if (value.Contains(" ") && !value.StartsWith("\"") && !value.EndsWith("\""))
                 value = $"\"{value}\"";
             return value;
+        }
+
+        private static string GetDataDir()
+        {
+            var env = System.Environment.GetEnvironmentVariable("QOMICEX_HOME");
+            if (!string.IsNullOrEmpty(env)) return env;
+
+            var defaultDir = System.IO.Path.Combine(
+                System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
+                "qomicex-launcher");
+
+            var bootstrapFile = System.IO.Path.Combine(defaultDir, ".qomicex-bootstrap");
+            if (System.IO.File.Exists(bootstrapFile))
+            {
+                var customDir = System.IO.File.ReadAllText(bootstrapFile).Trim();
+                if (!string.IsNullOrEmpty(customDir))
+                    return customDir;
+            }
+
+            return defaultDir;
         }
     }
 }
