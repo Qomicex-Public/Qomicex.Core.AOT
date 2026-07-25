@@ -22,7 +22,8 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
         }
         else
         {
-            BaseUrl = "https://maven.minecraftforge.net";
+            //BaseUrl = "https://maven.minecraftforge.net";
+            BaseUrl = "https://maven.minecraftforge.net|https://libraries.minecraft.net";
         }
         this.gameDir = gameDir;
         this.gameVersion = gameVersion;
@@ -318,7 +319,30 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
             {
                 if (!string.IsNullOrEmpty(libInfo.Hash) && VerifyFileSha1(libPath, libInfo.Hash))
                     continue;
+                else
+                {
+                    if (string.IsNullOrEmpty(libInfo.Hash))
+                        continue;
+                }
             }
+
+            if(installProfileJson["install"] is not null)
+            {
+                if (installProfileJson["install"]?["path"]?.ToString() == libInfo.FullName)
+                {
+                    //写出主jar
+                    try
+                    {
+                        File.WriteAllBytes(libPath, ReadSpecifyFileFromZip(forgeInstallerPath, installProfileJson["install"]?["filePath"]?.ToString()));
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                    continue;
+                }
+            }
+            
             libs.Add(libInfo);
         }
 
@@ -334,7 +358,20 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
                 if (!string.IsNullOrEmpty(lib.Url))
                     url = SourceId != 0 ? ResolveUrl(lib.Url) : lib.Url;
                 else
-                    url = $"{BaseUrl}/{lib.Path}";
+                {
+                    if (BaseUrl.Contains("|"))
+                    {
+                        var baseUrls = BaseUrl.Split("|");
+                        foreach (var baseUrl in baseUrls)
+                        {
+                            url = $"{baseUrl}/{lib.Path}";
+                            if (IsFileUrlAvailableAsync(url).Result)
+                                break;
+                        }
+                    }
+                    else
+                        url = $"{BaseUrl}/{lib.Path}";
+                }
 
                 missFiles.Add(new MissFileData(
                     $"{lib.Name}-{lib.Version}.jar",
