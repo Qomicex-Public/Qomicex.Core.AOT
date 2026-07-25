@@ -334,7 +334,12 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
                 if (!string.IsNullOrEmpty(lib.Url))
                     url = SourceId != 0 ? ResolveUrl(lib.Url) : lib.Url;
                 else
-                    url = $"{BaseUrl}/{lib.Path}";
+                {
+                    var libBase = SourceId == 0 && !lib.Name.StartsWith("net.minecraftforge", StringComparison.OrdinalIgnoreCase)
+                        ? "https://libraries.minecraft.net"
+                        : BaseUrl;
+                    url = $"{libBase}/{lib.Path}";
+                }
 
                 missFiles.Add(new MissFileData(
                     $"{lib.Name}-{lib.Version}.jar",
