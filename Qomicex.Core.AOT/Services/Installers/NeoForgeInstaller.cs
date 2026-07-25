@@ -199,12 +199,7 @@ internal class NeoForgeInstaller : ForgeInstallerBase, IInstaller
                 if (!string.IsNullOrEmpty(lib.Url))
                     url = SourceId != 0 ? ResolveUrl(lib.Url) : lib.Url;
                 else
-                {
-                    var libBase = SourceId == 0 && !lib.Name.StartsWith("net.neoforged", StringComparison.OrdinalIgnoreCase)
-                        ? "https://libraries.minecraft.net"
-                        : BaseUrl;
-                    url = $"{libBase}/{lib.Path}";
-                }
+                    url = $"{BaseUrl}/{lib.Path}";
 
                 missFiles.Add(new MissFileData(
                     $"{lib.Name}-{lib.Version}.jar",
