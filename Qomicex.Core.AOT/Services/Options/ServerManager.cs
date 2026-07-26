@@ -27,9 +27,20 @@ public sealed class ServerManager : IServerManager
     public List<ServerEntry> LoadServerList()
     {
         var serverFilePath = GetServerFilePath();
+        Console.Error.WriteLine($"[DEBUG-SERVERS] 读取 servers.dat: {serverFilePath} (存在: {File.Exists(serverFilePath)})");
         if (!File.Exists(serverFilePath))
         {
-            return new List<ServerEntry>();
+            // 尝试从 servers.dat_old 读取
+            var oldPath = serverFilePath + "_old";
+            Console.Error.WriteLine($"[DEBUG-SERVERS] servers.dat 不存在，尝试 servers.dat_old: {oldPath} (存在: {File.Exists(oldPath)})");
+            if (File.Exists(oldPath))
+            {
+                serverFilePath = oldPath;
+            }
+            else
+            {
+                return new List<ServerEntry>();
+            }
         }
 
         try
@@ -71,12 +82,27 @@ public sealed class ServerManager : IServerManager
             Directory.CreateDirectory(directory);
         }
 
-        using var fileStream = File.Create(serverFilePath);
-        using var gzipStream = new GZipStream(fileStream, CompressionMode.Compress);
-        NbtIO.Write(gzipStream, new NbtCompound(StringComparer.Ordinal)
+        Console.Error.WriteLine($"[DEBUG-SERVERS] 写入 servers.dat: {serverFilePath} (共 {servers.Count} 个服务器)");
+        foreach (var s in servers)
+            Console.Error.WriteLine($"[DEBUG-SERVERS]   - {s.Name} @ {s.Address}");
+
+        // 先序列化到内存，避免两次 GZip 压缩不一致
+        using var ms = new MemoryStream();
+        using (var gzipStream = new GZipStream(ms, CompressionMode.Compress, true))
         {
-            ["servers"] = servers.Select(ToNbtCompound).ToList()
-        });
+            NbtIO.Write(gzipStream, new NbtCompound(StringComparer.Ordinal)
+            {
+                ["servers"] = servers.Select(ToNbtCompound).ToList()
+            });
+        }
+        var data = ms.ToArray();
+
+        File.WriteAllBytes(serverFilePath, data);
+
+        // 同步写入 servers.dat_old
+        var oldFilePath = serverFilePath + "_old";
+        File.WriteAllBytes(oldFilePath, data);
+        Console.Error.WriteLine($"[DEBUG-SERVERS] 同步写入 servers.dat_old: {oldFilePath}");
     }
 
     public void AddOrUpdateServer(ServerEntry server)
@@ -304,7 +330,8 @@ public sealed class ServerManager : IServerManager
             Name = NbtIO.GetOptionalString(compound, "name") ?? string.Empty,
             Address = NbtIO.GetOptionalString(compound, "ip") ?? string.Empty,
             IconBase64 = NbtIO.GetOptionalString(compound, "icon"),
-            AcceptTextures = NbtIO.GetOptionalBool(compound, "acceptTextures")
+            AcceptTextures = NbtIO.GetOptionalBool(compound, "acceptTextures"),
+            Hidden = NbtIO.GetOptionalBool(compound, "hidden")
         };
     }
 
@@ -314,7 +341,8 @@ public sealed class ServerManager : IServerManager
         {
             ["name"] = server.Name ?? string.Empty,
             ["ip"] = server.Address ?? string.Empty,
-            ["acceptTextures"] = server.AcceptTextures
+            ["acceptTextures"] = server.AcceptTextures,
+            ["hidden"] = server.Hidden
         };
 
         if (!string.IsNullOrEmpty(server.IconBase64))
@@ -332,7 +360,8 @@ public sealed class ServerManager : IServerManager
             Name = server.Name,
             Address = server.Address,
             IconBase64 = server.IconBase64,
-            AcceptTextures = server.AcceptTextures
+            AcceptTextures = server.AcceptTextures,
+            Hidden = server.Hidden
         };
     }
 
