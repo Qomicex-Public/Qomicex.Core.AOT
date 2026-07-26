@@ -722,7 +722,7 @@ namespace Qomicex.Core.AOT.Services
             //处理InheritsFrom
             if (!string.IsNullOrEmpty(config.InheritsFrom))
             {
-                var inheritsFromOptions = options with { Version = config.InheritsFrom };
+                var inheritsFromOptions = options with { Version = config.InheritsFrom, JoinServer = null, JoinWorld = null };
 
                 gameList.AddRange(GetGameParams(inheritsFromOptions));
             }
@@ -755,13 +755,27 @@ namespace Qomicex.Core.AOT.Services
 
             if (!string.IsNullOrEmpty(options.JoinServer))
             {
-                gameList.Add("--quickPlayMultiplayer");
-                gameList.Add(options.JoinServer); 
+                if (IsQuickPlaySupported(config))
+                {
+                    gameList.Add("--quickPlayMultiplayer");
+                    gameList.Add(options.JoinServer);
+                }
+                else
+                {
+                    var (server, port) = ParseServerAddress(options.JoinServer);
+                    gameList.Add("--server");
+                    gameList.Add(server);
+                    gameList.Add("--port");
+                    gameList.Add(port.ToString());
+                }
             }
             if (!string.IsNullOrEmpty(NormalizeArg(options.JoinWorld)))
             {
-                gameList.Add("--quickPlaySingleplayer");
-                gameList.Add(NormalizeArg(options.JoinWorld));
+                if (IsQuickPlaySupported(config))
+                {
+                    gameList.Add("--quickPlaySingleplayer");
+                    gameList.Add(NormalizeArg(options.JoinWorld));
+                }
             }
 
 
@@ -775,6 +789,26 @@ namespace Qomicex.Core.AOT.Services
             if (value.Contains(" ") && !value.StartsWith("\"") && !value.EndsWith("\""))
                 value = $"\"{value}\"";
             return value;
+        }
+
+        static bool IsQuickPlaySupported(Config config)
+        {
+            var indexId = config.AssetIndex?.Id;
+            if (string.IsNullOrEmpty(indexId)) return false;
+            if (int.TryParse(indexId, out int num)) return num >= 4;
+            return false;
+        }
+
+        static (string server, int port) ParseServerAddress(string address)
+        {
+            var lastColon = address.LastIndexOf(':');
+            if (lastColon > 0)
+            {
+                var server = address[..lastColon];
+                var portStr = address[(lastColon + 1)..];
+                if (int.TryParse(portStr, out int port)) return (server, port);
+            }
+            return (address, 25565);
         }
 
         private static string GetDataDir()
