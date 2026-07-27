@@ -16,6 +16,29 @@ public record VersionDetail(
     [property: JsonPropertyName("files")] List<FtbFileInfo>? Files
 );
 
+public record ModsDetail(
+    [property: JsonPropertyName("id")] int Id,
+    [property: JsonPropertyName("parent")] int Parent,
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("plays")] long Plays,
+    [property: JsonPropertyName("installs")] long Installs,
+    [property: JsonPropertyName("updated")] long Updated,
+    [property: JsonPropertyName("changelog")] string? ChangelogUrl,
+    [property: JsonPropertyName("specs")] SpecsInfo? Specs,
+    [property: JsonPropertyName("targets")] List<TargetInfo>? Targets,
+    [property: JsonPropertyName("mods")] List<FtbModInfo>? Mods
+);
+
+public record FtbModInfo(
+    [property: JsonPropertyName("curseProject")] long ModId,
+    [property: JsonPropertyName("curseFile")] long FileId,
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("filename")] string FileName,
+    [property: JsonPropertyName("curseSlug")] string Slug,
+    [property: JsonPropertyName("size")] long Size
+);
+
 public record FtbFileInfo(
     [property: JsonPropertyName("id")] long Id,
     [property: JsonPropertyName("type")] string? Type,

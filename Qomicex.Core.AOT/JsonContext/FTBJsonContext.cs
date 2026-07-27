@@ -21,6 +21,8 @@ namespace Qomicex.Core.AOT.JsonContext;
 [JsonSerializable(typeof(RatingInfo))]
 [JsonSerializable(typeof(VersionDetail))]
 [JsonSerializable(typeof(FtbFileInfo))]
+[JsonSerializable(typeof(ModsDetail))]
+[JsonSerializable(typeof(FtbModInfo))]
 [JsonSerializable(typeof(ChangelogResult))]
 [JsonSerializable(typeof(CacheData))]
 [JsonSerializable(typeof(List<ModpackInfo>))]
