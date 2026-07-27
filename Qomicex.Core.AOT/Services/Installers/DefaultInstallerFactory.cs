@@ -28,6 +28,9 @@ internal sealed class DefaultInstallerFactory : IInstallerFactory
     public IInstaller CreateLegacyFabric(int downloadSource, string gameDir)
         => new LegacyFabricInstaller(downloadSource, gameDir);
 
+    public IInstaller CreateBabric(int downloadSource, string gameDir)
+        => new BabricInstaller(downloadSource, gameDir);
+
     public IInstaller CreateCurseForgeModpack(string gameDir, bool versionIsolation, string modpackFilePath)
         => new CurseForgeModpackInstaller(gameDir, versionIsolation, modpackFilePath);
 

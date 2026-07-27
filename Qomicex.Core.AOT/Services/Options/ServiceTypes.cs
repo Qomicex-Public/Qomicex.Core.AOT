@@ -88,6 +88,7 @@ public sealed record class ServerEntry
     public string Address { get; set; } = string.Empty;
     public string? IconBase64 { get; set; }
     public bool AcceptTextures { get; set; }
+    public bool Hidden { get; set; }
 }
 
 public sealed record class ServerState

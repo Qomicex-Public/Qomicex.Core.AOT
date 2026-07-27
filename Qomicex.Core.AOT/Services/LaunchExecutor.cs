@@ -515,7 +515,7 @@ namespace Qomicex.Core.AOT.Services
             if (!string.IsNullOrEmpty(meta.InheritsFrom))
                 LibList.AddRange(GetClassPath(options with { Version = meta.InheritsFrom }));
 
-            return LibHelper.CheckLibsVer(LibList);
+            return LibHelper.RemoveConflictingLibraries(LibHelper.CheckLibsVer(LibList));
         }
 
         public static string NameToUuid(string name)

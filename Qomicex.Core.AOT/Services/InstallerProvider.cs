@@ -75,8 +75,9 @@ namespace Qomicex.Core.AOT.Services
                 var liteloaderTask = WithTimeout(GetLiteloaderVersions(gameVersion));
                 var cleanroomTask = WithTimeout(GetCleanroomVersions(gameVersion));
                 var legacyFabricTask = WithTimeout(GetLegacyFabricVersions(gameVersion));
+                var babricTask = WithTimeout(GetBabricVersions(gameVersion));
 
-                await Task.WhenAll(forgeTask, fabricTask, neoForgeTask, optifineTask, liteloaderTask, quiltTask, cleanroomTask, legacyFabricTask);
+                await Task.WhenAll(forgeTask, fabricTask, neoForgeTask, optifineTask, liteloaderTask, quiltTask, cleanroomTask, legacyFabricTask, babricTask);
                 allLoaders.AddRange(await forgeTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await fabricTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await neoForgeTask ?? new List<ModLoaderResult>());
@@ -85,6 +86,7 @@ namespace Qomicex.Core.AOT.Services
                 allLoaders.AddRange(await quiltTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await cleanroomTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await legacyFabricTask ?? new List<ModLoaderResult>());
+                allLoaders.AddRange(await babricTask ?? new List<ModLoaderResult>());
                 return allLoaders.OrderByDescending(l => l.Version, new VersionComparer()).ToList();
             }
 
@@ -100,6 +102,7 @@ namespace Qomicex.Core.AOT.Services
                 ModLoaderType.OptiFine => (await GetOptifineVersions(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
                 ModLoaderType.Cleanroom => (await GetCleanroomVersions(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
                 ModLoaderType.LegacyFabric => (await GetLegacyFabricVersions(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
+                ModLoaderType.Babric => (await GetBabricVersions(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
                 _ => throw new ArgumentException($"不支持的ModLoader类型: {type}")
             };
         }
@@ -608,6 +611,61 @@ namespace Qomicex.Core.AOT.Services
             catch (Exception ex)
             {
                 Trace.WriteLine($"Legacy Fabric API 处理失败：{ex.Message}");
+            }
+            return SortAndDeduplicate(versions);
+        }
+
+        // ==================== Babric ====================
+
+        private async Task<List<ModLoaderResult>> GetBabricVersions(string minecraftVersion)
+        {
+            var versions = new List<ModLoaderResult>();
+            try
+            {
+                const string baseUrl = "https://meta.babric.glass-launcher.net/v2/versions";
+                var gameVersions = await GetSupportedGameVersions(_http, $"{baseUrl}/game");
+                if (!SupportsMinecraftVersion(gameVersions, minecraftVersion))
+                {
+                    Trace.WriteLine($"Babric 不支持 MC 版本 {minecraftVersion}");
+                    return versions;
+                }
+
+                var encodedMcVersion = Uri.EscapeDataString(minecraftVersion);
+                var loaderResponse = await _http.GetAsync($"{baseUrl}/loader/{encodedMcVersion}");
+                loaderResponse.EnsureSuccessStatusCode();
+
+                var loaderJson = await loaderResponse.Content.ReadAsStringAsync();
+                var loaderArray = JsonNode.Parse(loaderJson)!.AsArray();
+
+                foreach (var item in loaderArray.OfType<JsonObject>())
+                {
+                    var loaderInfo = item["loader"] as JsonObject;
+                    if (loaderInfo == null) continue;
+
+                    var loaderVersion = loaderInfo["version"]?.ToString();
+                    var isStable = loaderInfo["stable"]?.ToString().Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+
+                    if (string.IsNullOrEmpty(loaderVersion)) continue;
+
+                    versions.Add(new ModLoaderResult(
+                        ModLoaderType.Babric,
+                        loaderVersion,
+                        minecraftVersion,
+                        "API未提供",
+                        string.Empty,
+                        isStable,
+                        DateTimeOffset.MinValue
+                    ));
+                }
+                Trace.WriteLine($"Babric：成功解析 {versions.Count} 个版本");
+            }
+            catch (HttpRequestException ex)
+            {
+                Trace.WriteLine($"Babric API 请求失败：{ex.StatusCode} - {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"Babric API 处理失败：{ex.Message}");
             }
             return SortAndDeduplicate(versions);
         }

@@ -24,6 +24,7 @@ namespace Qomicex.Core.AOT.Public.Models
         LiteLoader,
         OptiFine,
         Cleanroom,
-        LegacyFabric
+        LegacyFabric,
+        Babric
     }
 }
