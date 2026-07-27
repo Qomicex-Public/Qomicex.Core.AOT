@@ -25,6 +25,9 @@ internal sealed class DefaultInstallerFactory : IInstallerFactory
     public IInstaller CreateCleanroom(int downloadSource, string gameDir)
         => new CleanroomInstaller(downloadSource, gameDir);
 
+    public IInstaller CreateLegacyFabric(int downloadSource, string gameDir)
+        => new LegacyFabricInstaller(downloadSource, gameDir);
+
     public IInstaller CreateCurseForgeModpack(string gameDir, bool versionIsolation, string modpackFilePath)
         => new CurseForgeModpackInstaller(gameDir, versionIsolation, modpackFilePath);
 
