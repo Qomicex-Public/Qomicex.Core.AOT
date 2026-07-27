@@ -300,7 +300,9 @@ internal class DefaultVersionLocator : IVersionLocator
         var artifact = lib.Downloads?.Artifact;
         if (artifact != null)
         {
-            items.Add(new MissFileInfo(lib.Name, ReplaceLibraryUrl(artifact.Url, artifact.Path), artifact.Sha1 ?? string.Empty, artifact.Path));
+            var libPath = !string.IsNullOrEmpty(artifact.Path) ? artifact.Path : LibHelper.MavenToPath(lib.Name);
+            if (string.IsNullOrEmpty(libPath)) return items;
+            items.Add(new MissFileInfo(lib.Name, ReplaceLibraryUrl(artifact.Url, libPath), artifact.Sha1 ?? string.Empty, libPath));
         }
 
         if (lib.Natives != null && lib.Downloads?.Classifiers != null)
