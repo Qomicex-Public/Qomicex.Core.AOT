@@ -24,5 +24,6 @@ public enum ModloaderType
     Fabric,
     Quilt,
     LiteLoader,
-    OptiFine
+    OptiFine,
+    Cleanroom
 }

@@ -428,6 +428,7 @@ internal class DefaultVersionLocator : IVersionLocator
         bool isQuiltFound = false;
         bool isOptiFineFound = false;
         bool isLiteLoaderFound = false;
+        bool isCleanroomFound = false;
 
         if (meta != null) 
         {
@@ -571,6 +572,19 @@ internal class DefaultVersionLocator : IVersionLocator
                             }
                         }
                     }
+                    //识别Cleanroom
+                    if (name.Contains("cleanroom"))
+                    {
+                        var nameParts = name.Split(':');
+                        if (nameParts.Length == 3)
+                        {
+                            if (nameParts[1].Contains("cleanroom"))
+                            {
+                                isCleanroomFound = true;
+                                types.Add(new ModloaderInfo(ModloaderType.Cleanroom, nameParts[2]));
+                            }
+                        }
+                    }
 
                 }
             }
@@ -640,8 +654,10 @@ internal class DefaultVersionLocator : IVersionLocator
                 //types.Add("Forge");
                 types.Add(new ModloaderInfo(ModloaderType.Forge, "Unknown"));
             }
+            // Cleanroom 的 mainClass 与 Forge 1.12.2 相同（launchwrapper）
+            // 通过 libraries 中的 cleanroom 包名检测
 
-            if (!(isOptiFineFound || isForgeFound || isNeoForgeFound || isLiteLoaderFound || isFabricFound || isQuiltFound))
+            if (!(isOptiFineFound || isForgeFound || isNeoForgeFound || isLiteLoaderFound || isFabricFound || isQuiltFound || isCleanroomFound))
             {
                 if (mainClass == "net.minecraft.launchwrapper.Launch")
                 {

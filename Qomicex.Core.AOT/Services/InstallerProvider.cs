@@ -73,14 +73,16 @@ namespace Qomicex.Core.AOT.Services
                 var quiltTask = WithTimeout(GetQuiltVersions(gameVersion));
                 var optifineTask = WithTimeout(GetOptifineVersions(gameVersion));
                 var liteloaderTask = WithTimeout(GetLiteloaderVersions(gameVersion));
+                var cleanroomTask = WithTimeout(GetCleanroomVersions(gameVersion));
 
-                await Task.WhenAll(forgeTask, fabricTask, neoForgeTask, optifineTask, liteloaderTask, quiltTask);
+                await Task.WhenAll(forgeTask, fabricTask, neoForgeTask, optifineTask, liteloaderTask, quiltTask, cleanroomTask);
                 allLoaders.AddRange(await forgeTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await fabricTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await neoForgeTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await optifineTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await liteloaderTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await quiltTask ?? new List<ModLoaderResult>());
+                allLoaders.AddRange(await cleanroomTask ?? new List<ModLoaderResult>());
                 return allLoaders.OrderByDescending(l => l.Version, new VersionComparer()).ToList();
             }
 
@@ -94,6 +96,7 @@ namespace Qomicex.Core.AOT.Services
                     ? (await GetNeoForgeFromOfficialApi(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList()
                     : (await GetNeoForgeFromBmclApi(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
                 ModLoaderType.OptiFine => (await GetOptifineVersions(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
+                ModLoaderType.Cleanroom => (await GetCleanroomVersions(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
                 _ => throw new ArgumentException($"不支持的ModLoader类型: {type}")
             };
         }
@@ -490,6 +493,53 @@ namespace Qomicex.Core.AOT.Services
             catch (Exception ex)
             {
                 Trace.WriteLine($"LiteLoader 版本获取失败: {ex.Message}");
+            }
+            return result;
+        }
+
+        // ==================== Cleanroom ====================
+
+        private async Task<List<ModLoaderResult>> GetCleanroomVersions(string minecraftVersion)
+        {
+            var result = new List<ModLoaderResult>();
+            try
+            {
+                if (!string.Equals(minecraftVersion, "1.12.2", StringComparison.OrdinalIgnoreCase))
+                    return result;
+
+                var response = await _http.GetAsync(
+                    "https://api.github.com/repos/CleanroomMC/Cleanroom/releases",
+                    HttpCompletionOption.ResponseContentRead);
+                response.EnsureSuccessStatusCode();
+                var json = await response.Content.ReadAsStringAsync();
+                var releases = JsonNode.Parse(json)!.AsArray();
+
+                foreach (var release in releases.OfType<JsonObject>())
+                {
+                    var tagName = release["tag_name"]?.ToString();
+                    if (string.IsNullOrEmpty(tagName)) continue;
+
+                    var isBeta = tagName.Contains("alpha", StringComparison.OrdinalIgnoreCase);
+
+                    var verStr = tagName.Contains('-') ? tagName[..tagName.IndexOf('-')] : tagName;
+                    if (!System.Version.TryParse(verStr, out _)) continue;
+
+                    result.Add(new ModLoaderResult(
+                        ModLoaderType.Cleanroom,
+                        tagName,
+                        "1.12.2",
+                        $"https://github.com/CleanroomMC/Cleanroom/releases/download/{tagName}/cleanroom-{tagName}-installer.jar",
+                        string.Empty,
+                        !isBeta,
+                        DateTimeOffset.MinValue
+                    ));
+                }
+
+                return SortAndDeduplicate(result);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"Cleanroom 版本获取失败: {ex.Message}");
             }
             return result;
         }

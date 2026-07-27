@@ -22,6 +22,9 @@ internal sealed class DefaultInstallerFactory : IInstallerFactory
     public IInstaller CreateOptiFine(int downloadSource, string gameDir, string gameVersion)
         => new OptiFineInstaller(downloadSource, gameDir, gameVersion);
 
+    public IInstaller CreateCleanroom(int downloadSource, string gameDir)
+        => new CleanroomInstaller(downloadSource, gameDir);
+
     public IInstaller CreateCurseForgeModpack(string gameDir, bool versionIsolation, string modpackFilePath)
         => new CurseForgeModpackInstaller(gameDir, versionIsolation, modpackFilePath);
 
