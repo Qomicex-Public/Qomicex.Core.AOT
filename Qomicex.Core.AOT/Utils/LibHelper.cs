@@ -120,6 +120,43 @@ namespace Qomicex.Core.AOT.Utils
             return groupedLibs.ToList();
         }
 
+        public static List<Library> RemoveConflictingLibraries(List<Library> libs)
+        {
+            var toRemove = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var lib in libs)
+            {
+                var parts = lib.Name?.Split(':');
+                if (parts == null || parts.Length < 3) continue;
+
+                var artifactId = parts[1];
+                if (!artifactId.EndsWith("-all", StringComparison.OrdinalIgnoreCase)) continue;
+
+                var groupId = parts[0];
+                var baseName = artifactId.Substring(0, artifactId.Length - 4);
+                var baseCoord = $"{groupId}:{baseName}";
+
+                var individualLib = libs.FirstOrDefault(l =>
+                    l.Name != null &&
+                    l.Name.StartsWith(baseCoord + ":", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(l.Name, lib.Name, StringComparison.OrdinalIgnoreCase));
+
+                if (individualLib == null) continue;
+
+                var fatVersion = parts[2];
+                var indVersion = GetLibVersion(individualLib);
+                if (VersionSortInteger(fatVersion, indVersion) < 0)
+                {
+                    toRemove.Add(lib.Name!);
+                    Trace.WriteLine($"[QML] 移除冲突库 {lib.Name}（已被 {individualLib.Name} 取代）");
+                }
+            }
+
+            return toRemove.Count > 0
+                ? libs.Where(l => !toRemove.Contains(l.Name!)).ToList()
+                : libs;
+        }
+
         public static string GetLibVersion(Library library)
         {
             string _fullName = library.Name ?? string.Empty;
