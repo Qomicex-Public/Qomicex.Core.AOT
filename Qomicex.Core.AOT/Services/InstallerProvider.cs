@@ -74,8 +74,9 @@ namespace Qomicex.Core.AOT.Services
                 var optifineTask = WithTimeout(GetOptifineVersions(gameVersion));
                 var liteloaderTask = WithTimeout(GetLiteloaderVersions(gameVersion));
                 var cleanroomTask = WithTimeout(GetCleanroomVersions(gameVersion));
+                var legacyFabricTask = WithTimeout(GetLegacyFabricVersions(gameVersion));
 
-                await Task.WhenAll(forgeTask, fabricTask, neoForgeTask, optifineTask, liteloaderTask, quiltTask, cleanroomTask);
+                await Task.WhenAll(forgeTask, fabricTask, neoForgeTask, optifineTask, liteloaderTask, quiltTask, cleanroomTask, legacyFabricTask);
                 allLoaders.AddRange(await forgeTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await fabricTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await neoForgeTask ?? new List<ModLoaderResult>());
@@ -83,6 +84,7 @@ namespace Qomicex.Core.AOT.Services
                 allLoaders.AddRange(await liteloaderTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await quiltTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await cleanroomTask ?? new List<ModLoaderResult>());
+                allLoaders.AddRange(await legacyFabricTask ?? new List<ModLoaderResult>());
                 return allLoaders.OrderByDescending(l => l.Version, new VersionComparer()).ToList();
             }
 
@@ -97,6 +99,7 @@ namespace Qomicex.Core.AOT.Services
                     : (await GetNeoForgeFromBmclApi(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
                 ModLoaderType.OptiFine => (await GetOptifineVersions(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
                 ModLoaderType.Cleanroom => (await GetCleanroomVersions(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
+                ModLoaderType.LegacyFabric => (await GetLegacyFabricVersions(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
                 _ => throw new ArgumentException($"不支持的ModLoader类型: {type}")
             };
         }
@@ -542,6 +545,94 @@ namespace Qomicex.Core.AOT.Services
                 Trace.WriteLine($"Cleanroom 版本获取失败: {ex.Message}");
             }
             return result;
+        }
+
+        // ==================== Legacy Fabric ====================
+
+        private async Task<List<ModLoaderResult>> GetLegacyFabricVersions(string minecraftVersion)
+        {
+            var versions = new List<ModLoaderResult>();
+            try
+            {
+                if (string.IsNullOrEmpty(minecraftVersion))
+                    return versions;
+
+                // ponytail: Legacy Fabric 仅支持 MC 1.12.2 及以下
+                if (!IsVersionBelowOrEqual(minecraftVersion, "1.12.2"))
+                {
+                    Trace.WriteLine($"Legacy Fabric 不支持 MC 版本 {minecraftVersion}（仅支持 1.12.2 及以下）");
+                    return versions;
+                }
+
+                const string baseUrl = "https://meta.legacyfabric.net/v2/versions";
+                var gameVersions = await GetSupportedGameVersions(_http, $"{baseUrl}/game");
+                if (!SupportsMinecraftVersion(gameVersions, minecraftVersion))
+                {
+                    Trace.WriteLine($"Legacy Fabric 不支持 MC 版本 {minecraftVersion}");
+                    return versions;
+                }
+
+                var encodedMcVersion = Uri.EscapeDataString(minecraftVersion);
+                var loaderResponse = await _http.GetAsync($"{baseUrl}/loader/{encodedMcVersion}");
+                loaderResponse.EnsureSuccessStatusCode();
+
+                var loaderJson = await loaderResponse.Content.ReadAsStringAsync();
+                var loaderArray = JsonNode.Parse(loaderJson)!.AsArray();
+
+                foreach (var item in loaderArray.OfType<JsonObject>())
+                {
+                    var loaderInfo = item["loader"] as JsonObject;
+                    if (loaderInfo == null) continue;
+
+                    var loaderVersion = loaderInfo["version"]?.ToString();
+                    var isStable = loaderInfo["stable"]?.ToString().Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+
+                    if (string.IsNullOrEmpty(loaderVersion)) continue;
+
+                    versions.Add(new ModLoaderResult(
+                        ModLoaderType.LegacyFabric,
+                        loaderVersion,
+                        minecraftVersion,
+                        "API未提供",
+                        string.Empty,
+                        isStable,
+                        DateTimeOffset.MinValue
+                    ));
+                }
+                Trace.WriteLine($"Legacy Fabric：成功解析 {versions.Count} 个版本");
+            }
+            catch (HttpRequestException ex)
+            {
+                Trace.WriteLine($"Legacy Fabric API 请求失败：{ex.StatusCode} - {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"Legacy Fabric API 处理失败：{ex.Message}");
+            }
+            return SortAndDeduplicate(versions);
+        }
+
+        // ponytail: 简单版本比较，不处理复杂版本格式
+        private static bool IsVersionBelowOrEqual(string version, string reference)
+        {
+            try
+            {
+                var vParts = version.Split(['.', '-', '_'], StringSplitOptions.RemoveEmptyEntries);
+                var rParts = reference.Split(['.', '-', '_'], StringSplitOptions.RemoveEmptyEntries);
+
+                for (int i = 0; i < Math.Max(vParts.Length, rParts.Length); i++)
+                {
+                    int v = i < vParts.Length && int.TryParse(vParts[i], out var vi) ? vi : 0;
+                    int r = i < rParts.Length && int.TryParse(rParts[i], out var ri) ? ri : 0;
+                    if (v < r) return true;
+                    if (v > r) return false;
+                }
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         // ==================== NeoForge ====================
