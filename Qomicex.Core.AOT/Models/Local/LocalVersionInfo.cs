@@ -21,8 +21,11 @@ public enum ModloaderType
     Vanilla,
     Forge,
     NeoForge,
+    Cleanroom,
+    LegacyFabric,
     Fabric,
     Quilt,
     LiteLoader,
-    OptiFine
+    OptiFine,
+    Cleanroom
 }

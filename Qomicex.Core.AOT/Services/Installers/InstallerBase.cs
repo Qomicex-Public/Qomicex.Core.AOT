@@ -25,6 +25,8 @@ internal abstract class InstallerBase
         Quilt,
         LiteLoader,
         OptiFine,
+        Cleanroom,
+        LegacyFabric,
     }
 
     internal static string MergeJson(string mainVersionJson, string mergedVersionJson)

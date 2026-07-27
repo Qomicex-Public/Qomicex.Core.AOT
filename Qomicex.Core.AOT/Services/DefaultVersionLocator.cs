@@ -300,7 +300,9 @@ internal class DefaultVersionLocator : IVersionLocator
         var artifact = lib.Downloads?.Artifact;
         if (artifact != null)
         {
-            items.Add(new MissFileInfo(lib.Name, ReplaceLibraryUrl(artifact.Url, artifact.Path), artifact.Sha1 ?? string.Empty, artifact.Path));
+            var libPath = !string.IsNullOrEmpty(artifact.Path) ? artifact.Path : LibHelper.MavenToPath(lib.Name);
+            if (string.IsNullOrEmpty(libPath)) return items;
+            items.Add(new MissFileInfo(lib.Name, ReplaceLibraryUrl(artifact.Url, libPath), artifact.Sha1 ?? string.Empty, libPath));
         }
 
         if (lib.Natives != null && lib.Downloads?.Classifiers != null)
@@ -428,6 +430,8 @@ internal class DefaultVersionLocator : IVersionLocator
         bool isQuiltFound = false;
         bool isOptiFineFound = false;
         bool isLiteLoaderFound = false;
+        bool isCleanroomFound = false;
+        bool isLegacyFabricFound = false;
 
         if (meta != null) 
         {
@@ -487,6 +491,32 @@ internal class DefaultVersionLocator : IVersionLocator
                                 else
                                     ver = nameParts[2];
                                 types.Add(new ModloaderInfo(ModloaderType.LiteLoader, ver));
+                            }
+                        }
+                    }
+                    //识别Cleanroom
+                    if (name.Contains("cleanroom"))
+                    {
+                        var nameParts = name.Split(':');
+                        if (nameParts.Length == 3)
+                        {
+                            if (nameParts[1] == "cleanroom")
+                            {
+                                isCleanroomFound = true;
+                                string ver = string.Empty;
+                                if (nameParts[2].Contains('-'))
+                                {
+                                    var verParts = nameParts[2].Split('-');
+                                    if (verParts.Length == 2)
+                                    {
+                                        ver = verParts[1];
+                                    }
+                                    else
+                                        ver = nameParts[2];
+                                }
+                                else
+                                    ver = nameParts[2];
+                                types.Add(new ModloaderInfo(ModloaderType.Cleanroom, ver));
                             }
                         }
                     }
@@ -571,6 +601,19 @@ internal class DefaultVersionLocator : IVersionLocator
                             }
                         }
                     }
+                    //识别Cleanroom
+                    if (name.Contains("cleanroom"))
+                    {
+                        var nameParts = name.Split(':');
+                        if (nameParts.Length == 3)
+                        {
+                            if (nameParts[1].Contains("cleanroom"))
+                            {
+                                isCleanroomFound = true;
+                                types.Add(new ModloaderInfo(ModloaderType.Cleanroom, nameParts[2]));
+                            }
+                        }
+                    }
 
                 }
             }
@@ -640,8 +683,14 @@ internal class DefaultVersionLocator : IVersionLocator
                 //types.Add("Forge");
                 types.Add(new ModloaderInfo(ModloaderType.Forge, "Unknown"));
             }
+            if (!isCleanroomFound && mainClass == "top.outlands.foundation.boot.foundation")
+            {
+                isCleanroomFound = true;
+                //types.Add("Cleanroom");
+                types.Add(new ModloaderInfo(ModloaderType.Cleanroom, "Unknown"));
+            }
 
-            if (!(isOptiFineFound || isForgeFound || isNeoForgeFound || isLiteLoaderFound || isFabricFound || isQuiltFound))
+            if (!(isOptiFineFound || isForgeFound || isNeoForgeFound || isLiteLoaderFound || isFabricFound || isQuiltFound || isCleanroomFound))
             {
                 if (mainClass == "net.minecraft.launchwrapper.Launch")
                 {

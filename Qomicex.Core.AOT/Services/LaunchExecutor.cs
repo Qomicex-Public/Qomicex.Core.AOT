@@ -161,7 +161,8 @@ namespace Qomicex.Core.AOT.Services
                 if (native.Natives.TryGetValue(osName, out var classifierTemplate))
                 {
                     var key = classifierTemplate.Replace("${arch}", SystemHelper.GetCurrentArch());
-                    if (native.Downloads.Classifiers.TryGetValue(key, out var artifact))
+                    if (native.Downloads.Classifiers.TryGetValue(key, out var artifact)
+                        && !string.IsNullOrEmpty(artifact.Path))
                         return artifact.Path;
                 }
             }

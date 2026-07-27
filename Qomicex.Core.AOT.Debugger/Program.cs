@@ -364,6 +364,8 @@ internal sealed class Program
             ("install-loader quilt <vid> <gv> <qv>", "安装 Quilt 加载器"),
             ("install-loader litelloader <vid> <gv> <lv>", "安装 LiteLoader"),
             ("install-loader optifine <vid> <gv> <tp> <path> <java>", "安装 OptiFine"),
+            ("install-loader cleanroom <vid> <path> <java>", "安装 Cleanroom"),
+            ("install-loader legacyfabric <vid> <gv> <lv>", "安装 Legacy Fabric"),
             ("", ""),
             ("clear / cls", "清屏"),
             ("exit / quit / q", "退出"),
