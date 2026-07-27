@@ -5,6 +5,7 @@ using Qomicex.Core.AOT.Models.Local;
 using Qomicex.Core.AOT.Models.VersionMetadata;
 using Qomicex.Core.AOT.Public.Models;
 using Qomicex.Core.AOT.Utils;
+using System.Diagnostics;
 using System.Text.Json.Nodes;
 
 namespace Qomicex.Core.AOT.Services;
@@ -496,12 +497,13 @@ internal class DefaultVersionLocator : IVersionLocator
                         }
                     }
                     //识别Cleanroom
-                    if (name.Contains("cleanroom"))
+                    if (name.ToLower().Contains("cleanroom"))
                     {
+                        Trace.WriteLine($"{name} Found");
                         var nameParts = name.Split(':');
                         if (nameParts.Length == 3)
                         {
-                            if (nameParts[1] == "cleanroom")
+                            if (nameParts[1].ToLower() == "cleanroom")
                             {
                                 isCleanroomFound = true;
                                 string ver = string.Empty;
