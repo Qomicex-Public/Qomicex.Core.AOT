@@ -86,15 +86,12 @@ public sealed class ServerManager : IServerManager
         foreach (var s in servers)
             Console.Error.WriteLine($"[DEBUG-SERVERS]   - {s.Name} @ {s.Address}");
 
-        // 先序列化到内存，避免两次 GZip 压缩不一致
+        // 直接写入未压缩 NBT，Minecraft 游戏客户端不支持 GZip 格式
         using var ms = new MemoryStream();
-        using (var gzipStream = new GZipStream(ms, CompressionMode.Compress, true))
+        NbtIO.Write(ms, new NbtCompound(StringComparer.Ordinal)
         {
-            NbtIO.Write(gzipStream, new NbtCompound(StringComparer.Ordinal)
-            {
-                ["servers"] = servers.Select(ToNbtCompound).ToList()
-            });
-        }
+            ["servers"] = servers.Select(ToNbtCompound).ToList()
+        });
         var data = ms.ToArray();
 
         File.WriteAllBytes(serverFilePath, data);
