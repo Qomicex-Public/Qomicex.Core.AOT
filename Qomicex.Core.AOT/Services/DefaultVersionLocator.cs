@@ -582,8 +582,17 @@ internal class DefaultVersionLocator : IVersionLocator
                         {
                             if (nameParts[1] == "fabric" || nameParts[1] == "fabric-loader")
                             {
-                                isFabricFound = true;
-                                types.Add(new ModloaderInfo(ModloaderType.Fabric, nameParts[2]));
+                                //判断是LegacyFabric还是正常的Fabric
+                                if (nameParts[0].ToLower().Contains("legacyfabric"))
+                                {
+                                    isLegacyFabricFound = true;
+                                    types.Add(new ModloaderInfo(ModloaderType.LegacyFabric, nameParts[2]));
+                                }
+                                else
+                                {
+                                    isFabricFound = true;
+                                    types.Add(new ModloaderInfo(ModloaderType.Fabric, nameParts[2]));
+                                }
                             }
                         }
                     }
