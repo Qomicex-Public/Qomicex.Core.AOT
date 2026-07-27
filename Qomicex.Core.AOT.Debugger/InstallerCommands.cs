@@ -31,6 +31,8 @@ internal static class InstallerCommands
                 return OptiFineCmd(rest);
             case "cleanroom":
                 return CleanroomCmd(rest);
+            case "legacyfabric":
+                return LegacyFabricCmd(rest);
             default:
                 return false;
         }
@@ -51,6 +53,7 @@ internal static class InstallerCommands
             ("install-loader litelloader <vid> <gv> <lv>", "安装 LiteLoader"),
             ("install-loader optifine <vid> <gv> <type-patch> <path> <java>", "安装 OptiFine"),
             ("install-loader cleanroom <vid> <path> <java>", "安装 Cleanroom: path=安装器路径, java=java路径"),
+            ("install-loader legacyfabric <vid> <gv> <lv>", "安装 Legacy Fabric: vid=版本ID, gv=游戏版本, lv=Legacy Fabric版本"),
         };
 
         foreach (var (c, d) in cmds)
@@ -157,6 +160,20 @@ internal static class InstallerCommands
             var installer = new CleanroomInstaller(0, GameRoot);
             await installer.InstallAsync(vid, "", java, path, null, null);
             Trace.TraceInformation($"Cleanroom 安装完成 -> {vid}");
+        });
+        return true;
+    }
+
+    static bool LegacyFabricCmd(string[] args)
+    {
+        if (args.Length < 3) { Trace.TraceError("用法: install-loader legacyfabric <vid> <gv> <lv>"); return true; }
+        var (vid, gv, lv) = (args[0], args[1], args[2]);
+
+        FireAsync(async () =>
+        {
+            var installer = new LegacyFabricInstaller(0, GameRoot);
+            await installer.InstallAsync(vid, "", lv, gv, null, null);
+            Trace.TraceInformation($"Legacy Fabric {lv} 安装完成 -> {vid}");
         });
         return true;
     }
