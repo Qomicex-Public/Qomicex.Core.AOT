@@ -432,6 +432,7 @@ internal class DefaultVersionLocator : IVersionLocator
         bool isLiteLoaderFound = false;
         bool isCleanroomFound = false;
         bool isLegacyFabricFound = false;
+        bool isBabricFound = false;
 
         if (meta != null) 
         {
@@ -574,8 +575,18 @@ internal class DefaultVersionLocator : IVersionLocator
                             }
                         }
                     }
+                    //识别Babric
+                    if (name.Contains("babric"))
+                    {
+                        var nameParts = name.Split(':');
+                        if (nameParts.Length == 3 && nameParts[0] == "babric")
+                        {
+                            isBabricFound = true;
+                            types.Add(new ModloaderInfo(ModloaderType.Babric, "Unknown"));
+                        }
+                    }
                     //识别Fabric
-                    if (name.Contains("fabric"))
+                    if (name.Contains("fabric") && !isBabricFound)
                     {
                         var nameParts = name.Split(':');
                         if (nameParts.Length == 3)
@@ -680,7 +691,7 @@ internal class DefaultVersionLocator : IVersionLocator
                 //types.Add("NeoForge");
                 types.Add(new ModloaderInfo(ModloaderType.NeoForge, "Unknown"));
             }
-            if (!isFabricFound && mainClass == "net.fabricmc.loader.impl.launch.knot.knotclient")
+            if (!isFabricFound && !isBabricFound && mainClass == "net.fabricmc.loader.impl.launch.knot.knotclient")
             {
                 isFabricFound = true;
                 //types.Add("Fabric");
@@ -699,7 +710,7 @@ internal class DefaultVersionLocator : IVersionLocator
                 types.Add(new ModloaderInfo(ModloaderType.Cleanroom, "Unknown"));
             }
 
-            if (!(isOptiFineFound || isForgeFound || isNeoForgeFound || isLiteLoaderFound || isFabricFound || isQuiltFound || isCleanroomFound))
+            if (!(isOptiFineFound || isForgeFound || isNeoForgeFound || isLiteLoaderFound || isFabricFound || isQuiltFound || isCleanroomFound || isBabricFound))
             {
                 if (mainClass == "net.minecraft.launchwrapper.Launch")
                 {

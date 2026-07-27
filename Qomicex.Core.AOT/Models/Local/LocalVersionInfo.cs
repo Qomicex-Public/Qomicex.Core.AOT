@@ -23,6 +23,7 @@ public enum ModloaderType
     NeoForge,
     Cleanroom,
     LegacyFabric,
+    Babric,
     Fabric,
     Quilt,
     LiteLoader,
