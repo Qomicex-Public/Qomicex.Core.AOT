@@ -29,6 +29,8 @@ internal static class InstallerCommands
                 return LiteLoaderCmd(rest);
             case "optifine":
                 return OptiFineCmd(rest);
+            case "cleanroom":
+                return CleanroomCmd(rest);
             default:
                 return false;
         }
@@ -48,6 +50,7 @@ internal static class InstallerCommands
             ("install-loader quilt <vid> <gv> <qv>", "安装 Quilt"),
             ("install-loader litelloader <vid> <gv> <lv>", "安装 LiteLoader"),
             ("install-loader optifine <vid> <gv> <type-patch> <path> <java>", "安装 OptiFine"),
+            ("install-loader cleanroom <vid> <path> <java>", "安装 Cleanroom: path=安装器路径, java=java路径"),
         };
 
         foreach (var (c, d) in cmds)
@@ -140,6 +143,20 @@ internal static class InstallerCommands
             var installer = new OptiFineInstaller(0, GameRoot, gv);
             await installer.InstallAsync(vid, "", tp, path, java, null);
             Trace.TraceInformation($"OptiFine 安装完成 -> {vid}");
+        });
+        return true;
+    }
+
+    static bool CleanroomCmd(string[] args)
+    {
+        if (args.Length < 3) { Trace.TraceError("用法: install-loader cleanroom <vid> <path> <java>"); return true; }
+        var (vid, path, java) = (args[0], args[1], args[2]);
+
+        FireAsync(async () =>
+        {
+            var installer = new CleanroomInstaller(0, GameRoot);
+            await installer.InstallAsync(vid, "", java, path, null, null);
+            Trace.TraceInformation($"Cleanroom 安装完成 -> {vid}");
         });
         return true;
     }

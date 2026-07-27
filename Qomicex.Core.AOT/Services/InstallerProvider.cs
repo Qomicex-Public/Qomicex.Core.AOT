@@ -73,14 +73,16 @@ namespace Qomicex.Core.AOT.Services
                 var quiltTask = WithTimeout(GetQuiltVersions(gameVersion));
                 var optifineTask = WithTimeout(GetOptifineVersions(gameVersion));
                 var liteloaderTask = WithTimeout(GetLiteloaderVersions(gameVersion));
+                var cleanroomTask = WithTimeout(GetCleanroomVersions(gameVersion));
 
-                await Task.WhenAll(forgeTask, fabricTask, neoForgeTask, optifineTask, liteloaderTask, quiltTask);
+                await Task.WhenAll(forgeTask, fabricTask, neoForgeTask, optifineTask, liteloaderTask, quiltTask, cleanroomTask);
                 allLoaders.AddRange(await forgeTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await fabricTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await neoForgeTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await optifineTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await liteloaderTask ?? new List<ModLoaderResult>());
                 allLoaders.AddRange(await quiltTask ?? new List<ModLoaderResult>());
+                allLoaders.AddRange(await cleanroomTask ?? new List<ModLoaderResult>());
                 return allLoaders.OrderByDescending(l => l.Version, new VersionComparer()).ToList();
             }
 
@@ -94,6 +96,7 @@ namespace Qomicex.Core.AOT.Services
                     ? (await GetNeoForgeFromOfficialApi(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList()
                     : (await GetNeoForgeFromBmclApi(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
                 ModLoaderType.OptiFine => (await GetOptifineVersions(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
+                ModLoaderType.Cleanroom => (await GetCleanroomVersions(gameVersion)).OrderByDescending(l => l.Version, new VersionComparer()).ToList(),
                 _ => throw new ArgumentException($"不支持的ModLoader类型: {type}")
             };
         }
@@ -494,6 +497,53 @@ namespace Qomicex.Core.AOT.Services
             return result;
         }
 
+        // ==================== Cleanroom ====================
+
+        private async Task<List<ModLoaderResult>> GetCleanroomVersions(string minecraftVersion)
+        {
+            var result = new List<ModLoaderResult>();
+            try
+            {
+                if (!string.Equals(minecraftVersion, "1.12.2", StringComparison.OrdinalIgnoreCase))
+                    return result;
+
+                var response = await _http.GetAsync(
+                    "https://api.github.com/repos/CleanroomMC/Cleanroom/releases",
+                    HttpCompletionOption.ResponseContentRead);
+                response.EnsureSuccessStatusCode();
+                var json = await response.Content.ReadAsStringAsync();
+                var releases = JsonNode.Parse(json)!.AsArray();
+
+                foreach (var release in releases.OfType<JsonObject>())
+                {
+                    var tagName = release["tag_name"]?.ToString();
+                    if (string.IsNullOrEmpty(tagName)) continue;
+
+                    var isBeta = tagName.Contains("alpha", StringComparison.OrdinalIgnoreCase);
+
+                    var verStr = tagName.Contains('-') ? tagName[..tagName.IndexOf('-')] : tagName;
+                    if (!System.Version.TryParse(verStr, out _)) continue;
+
+                    result.Add(new ModLoaderResult(
+                        ModLoaderType.Cleanroom,
+                        tagName,
+                        "1.12.2",
+                        $"https://github.com/CleanroomMC/Cleanroom/releases/download/{tagName}/cleanroom-{tagName}-installer.jar",
+                        string.Empty,
+                        !isBeta,
+                        DateTimeOffset.MinValue
+                    ));
+                }
+
+                return SortAndDeduplicate(result);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"Cleanroom 版本获取失败: {ex.Message}");
+            }
+            return result;
+        }
+
         // ==================== NeoForge ====================
 
         private async Task<List<ModLoaderResult>> GetNeoForgeFromOfficialApi(string minecraftVersion)
@@ -705,8 +755,9 @@ namespace Qomicex.Core.AOT.Services
 
         private async Task<List<ModLoaderResult>> GetForgeVersionsFromOfficialHtml(string minecraftVersion)
         {
+            var forgeMcVersion = minecraftVersion.Replace('-', '_');
             var forgeLoaders = new List<ModLoaderResult>();
-            var cacheFilePath = GetCacheFilePath(minecraftVersion);
+            var cacheFilePath = GetCacheFilePath(forgeMcVersion);
             const int cacheExpiryHours = 24;
 
             if (File.Exists(cacheFilePath) &&
@@ -715,7 +766,7 @@ namespace Qomicex.Core.AOT.Services
                 try
                 {
                     var cachedHtml = File.ReadAllText(cacheFilePath);
-                    return ParseForgeVersions(minecraftVersion, cachedHtml);
+                    return ParseForgeVersions(minecraftVersion, forgeMcVersion, cachedHtml);
                 }
                 catch (Exception ex)
                 {
@@ -725,7 +776,7 @@ namespace Qomicex.Core.AOT.Services
 
             var sourceUrls = new List<string>
             {
-                $"https://files.minecraftforge.net/net/minecraftforge/forge/index_{minecraftVersion}.html"
+                $"https://files.minecraftforge.net/net/minecraftforge/forge/index_{forgeMcVersion}.html"
             };
 
             foreach (var url in sourceUrls)
@@ -755,7 +806,7 @@ namespace Qomicex.Core.AOT.Services
                         Trace.WriteLine($"缓存写入失败: {ex.Message}");
                     }
 
-                    var result = ParseForgeVersions(minecraftVersion, htmlContent);
+                    var result = ParseForgeVersions(minecraftVersion, forgeMcVersion, htmlContent);
                     if (result.Any())
                         return result;
                 }
@@ -771,7 +822,7 @@ namespace Qomicex.Core.AOT.Services
                 {
                     var cachedHtml = File.ReadAllText(cacheFilePath);
                     Trace.WriteLine($"读取已缓存html到{cacheFilePath}中的数据");
-                    return ParseForgeVersions(minecraftVersion, cachedHtml);
+                    return ParseForgeVersions(minecraftVersion, forgeMcVersion, cachedHtml);
                 }
                 catch (Exception ex)
                 {
@@ -782,7 +833,7 @@ namespace Qomicex.Core.AOT.Services
             return forgeLoaders;
         }
 
-        private static List<ModLoaderResult> ParseForgeVersions(string minecraftVersion, string htmlContent)
+        private static List<ModLoaderResult> ParseForgeVersions(string minecraftVersion, string forgeMcVersion, string htmlContent)
         {
             var forgeLoaders = new List<ModLoaderResult>();
 
@@ -821,7 +872,7 @@ namespace Qomicex.Core.AOT.Services
                 var categoryMatch = Regex.Match(rowHtml, @"classifier-(installer|universal|client)", RegexOptions.IgnoreCase);
                 var fileCategory = categoryMatch.Success ? categoryMatch.Groups[1].Value : "installer";
 
-                var urlPattern = $@"href=""([^""]*?forge-(?:{Regex.Escape(minecraftVersion)}|.{Regex.Escape(minecraftVersion)})-{Regex.Escape(forgeVersion)}.*?{fileCategory}\.(jar|zip)[^""]*)""";
+                var urlPattern = $@"href=""([^""]*?forge-(?:{Regex.Escape(minecraftVersion)}|{Regex.Escape(forgeMcVersion)}|.{Regex.Escape(minecraftVersion)})-{Regex.Escape(forgeVersion)}.*?{fileCategory}\.(jar|zip)[^""]*)""";
                 var urlMatch = Regex.Match(rowHtml, urlPattern, RegexOptions.IgnoreCase);
                 if (!urlMatch.Success)
                 {
@@ -880,7 +931,7 @@ namespace Qomicex.Core.AOT.Services
                 return string.Empty;
             return _mirror == DownloadMirror.BMCLAPI
                 ? $"https://bmclapi2.bangbang93.com/forge/download/{forgeVersion}"
-                : $"https://maven.minecraftforge.net/net/minecraftforge/forge/{mcVersion}-{forgeVersion}/forge-{mcVersion}-{forgeVersion}-installer.jar";
+                : $"https://maven.minecraftforge.net/net/minecraftforge/forge/{mcVersion.Replace('-', '_')}-{forgeVersion}/forge-{mcVersion.Replace('-', '_')}-{forgeVersion}-installer.jar";
         }
 
         private static bool IsRecommendedVersion(string buildNumber, List<ModLoaderResult> existingLoaders)

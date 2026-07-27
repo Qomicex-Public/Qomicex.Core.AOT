@@ -124,6 +124,49 @@ internal class ForgeInstallerBase : InstallerBase
         return actualHash.Trim().Equals(expectedHash.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
+
+    internal static async Task<bool> IsFileUrlAvailableAsync(string url, int timeoutSeconds = 10)
+    {
+        // 1. 基础URL校验
+        if (string.IsNullOrWhiteSpace(url) || !Uri.IsWellFormedUriString(url, UriKind.Absolute))
+        {
+            return false;
+        }
+
+        // 使用 HttpClient 的最佳实践：建议在应用程序生命周期内使用单一实例
+        // 这里为简化示例，在 using 中创建。实际项目建议使用 IHttpClientFactory 或单例。
+        using var handler = new HttpClientHandler();
+        using var client = new HttpClient(handler);
+
+        // 设置超时，避免请求永久阻塞
+        client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
+
+        // 创建并发送 HEAD 请求
+        using var request = new HttpRequestMessage(HttpMethod.Head, url);
+        try
+        {
+            using var response = await client.SendAsync(request);
+
+            // 如果服务器返回 2xx 状态码，通常认为 URL 可用
+            return response.IsSuccessStatusCode;
+        }
+        catch (HttpRequestException)
+        {
+            // 网络不通、服务器无响应等异常情况
+            return false;
+        }
+        catch (TaskCanceledException) when (client.Timeout != Timeout.InfiniteTimeSpan)
+        {
+            // 请求超时
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+
     internal string ResolveLibraryPath(string gameDir, string mavenCoordinate)
     {
         var relativePath = MavenToPath(mavenCoordinate);

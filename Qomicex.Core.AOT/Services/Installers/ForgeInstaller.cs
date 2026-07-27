@@ -22,7 +22,8 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
         }
         else
         {
-            BaseUrl = "https://maven.minecraftforge.net";
+            //BaseUrl = "https://maven.minecraftforge.net";
+            BaseUrl = "https://maven.minecraftforge.net|https://libraries.minecraft.net";
         }
         this.gameDir = gameDir;
         this.gameVersion = gameVersion;
@@ -67,7 +68,8 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
         string profileName = string.IsNullOrEmpty(installProfileJson["profile"]?.ToString())
             ? installProfileJson["install"]?["profileName"]?.ToString() ?? string.Empty
             : installProfileJson["profile"]?.ToString()!;
-        if (profileName != "forge")
+        Trace.WriteLine($"[ForgeInstaller] InstallForge 检测到 profileName={profileName}");
+        if (!string.Equals(profileName, "forge", StringComparison.OrdinalIgnoreCase))
             throw new Exception("安装器版本不正确，请检查安装器文件是否正确");
 
         var versionData = JsonNode.Parse(jsonData!)!.AsObject();
@@ -194,12 +196,20 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
         var installProfileJson = JsonNode.Parse(installProfileData!)!.AsObject();
 
         if (string.IsNullOrEmpty(jsonData))
+        {
+            Trace.WriteLine("[ForgeInstaller] InstallLegacyForge 未找到 version.json，使用 install_profile.json 中的 versionInfo");
             jsonData = installProfileJson["versionInfo"]?.ToString() ?? throw new Exception("无法找到版本Json信息");
+        }
+        else
+        {
+            Trace.WriteLine("[ForgeInstaller] InstallLegacyForge 使用安装包内的 version.json");
+        }
 
         string profileName = string.IsNullOrEmpty(installProfileJson["profile"]?.ToString())
             ? installProfileJson["install"]?["profileName"]?.ToString() ?? string.Empty
             : installProfileJson["profile"]?.ToString()!;
-        if (profileName != "forge")
+        Trace.WriteLine($"[ForgeInstaller] InstallLegacyForge 检测到 profileName={profileName}");
+        if (!string.Equals(profileName, "forge", StringComparison.OrdinalIgnoreCase))
             throw new Exception("安装器版本不正确，请检查安装器文件是否正确");
 
         var versionData = JsonNode.Parse(jsonData!)!.AsObject();
@@ -260,7 +270,8 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
         string profileName = string.IsNullOrEmpty(installProfileJson["profile"]?.ToString())
             ? installProfileJson["install"]?["profileName"]?.ToString() ?? string.Empty
             : installProfileJson["profile"]?.ToString()!;
-        if (profileName != "forge")
+        Trace.WriteLine($"[ForgeInstaller] IsLegacyForgeInstaller 检测到 profileName={profileName}");
+        if (!string.Equals(profileName, "forge", StringComparison.OrdinalIgnoreCase))
             throw new Exception("安装器版本不正确");
         bool hasProcessors = installProfileJson.ContainsKey("processors") && installProfileJson["processors"]!.AsArray().Count > 0;
         return !hasProcessors;
@@ -308,7 +319,30 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
             {
                 if (!string.IsNullOrEmpty(libInfo.Hash) && VerifyFileSha1(libPath, libInfo.Hash))
                     continue;
+                else
+                {
+                    if (string.IsNullOrEmpty(libInfo.Hash))
+                        continue;
+                }
             }
+
+            if(installProfileJson["install"] is not null)
+            {
+                if (installProfileJson["install"]?["path"]?.ToString() == libInfo.FullName)
+                {
+                    //写出主jar
+                    try
+                    {
+                        File.WriteAllBytes(libPath, ReadSpecifyFileFromZip(forgeInstallerPath, installProfileJson["install"]?["filePath"]?.ToString()));
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                    continue;
+                }
+            }
+            
             libs.Add(libInfo);
         }
 
@@ -324,7 +358,20 @@ internal class ForgeInstaller : ForgeInstallerBase, IInstaller
                 if (!string.IsNullOrEmpty(lib.Url))
                     url = SourceId != 0 ? ResolveUrl(lib.Url) : lib.Url;
                 else
-                    url = $"{BaseUrl}/{lib.Path}";
+                {
+                    if (BaseUrl.Contains("|"))
+                    {
+                        var baseUrls = BaseUrl.Split("|");
+                        foreach (var baseUrl in baseUrls)
+                        {
+                            url = $"{baseUrl}/{lib.Path}";
+                            if (IsFileUrlAvailableAsync(url).Result)
+                                break;
+                        }
+                    }
+                    else
+                        url = $"{BaseUrl}/{lib.Path}";
+                }
 
                 missFiles.Add(new MissFileData(
                     $"{lib.Name}-{lib.Version}.jar",

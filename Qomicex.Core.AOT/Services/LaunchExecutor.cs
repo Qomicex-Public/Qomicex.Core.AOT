@@ -108,8 +108,7 @@ namespace Qomicex.Core.AOT.Services
                     try
                     {
                         var logDir = System.IO.Path.Combine(
-                            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                            "qomicex-launcher", "logs");
+                            GetDataDir(), "logs");
                         System.IO.Directory.CreateDirectory(logDir);
                         System.IO.File.AppendAllText(
                             System.IO.Path.Combine(logDir, "launch-errors.log"),
@@ -154,6 +153,22 @@ namespace Qomicex.Core.AOT.Services
             });
         }
 
+        private static string GetNativePath(Library native)
+        {
+            if (native.Natives != null && native.Downloads?.Classifiers != null)
+            {
+                var osName = SystemHelper.GetCurrentOsName();
+                if (native.Natives.TryGetValue(osName, out var classifierTemplate))
+                {
+                    var key = classifierTemplate.Replace("${arch}", SystemHelper.GetCurrentArch());
+                    if (native.Downloads.Classifiers.TryGetValue(key, out var artifact)
+                        && !string.IsNullOrEmpty(artifact.Path))
+                        return artifact.Path;
+                }
+            }
+            return LibHelper.MavenToPath(native.Name);
+        }
+
         private bool UnzipNatives(LaunchOptions options)
         {
             var natives = GetNatives(options);
@@ -164,7 +179,7 @@ namespace Qomicex.Core.AOT.Services
                 // 逐个解压natives JAR到natives目录（保留JAR内部目录结构）
                 foreach (var native in natives)
                 {
-                    string zipFilePath = Path.Combine(_gameDir, "libraries", LibHelper.MavenToPath(native.Name));
+                    string zipFilePath = Path.Combine(_gameDir, "libraries", GetNativePath(native));
                     if (System.IO.File.Exists(zipFilePath))
                     {
                         FileHelper.Unzip(zipFilePath, nativesDir);
@@ -193,7 +208,7 @@ namespace Qomicex.Core.AOT.Services
                 Directory.CreateDirectory(javaLibDir);
                 foreach (var native in natives)
                 {
-                    string zipFilePath = Path.Combine(_gameDir, "libraries", LibHelper.MavenToPath(native.Name));
+                    string zipFilePath = Path.Combine(_gameDir, "libraries", GetNativePath(native));
                     if (System.IO.File.Exists(zipFilePath))
                     {
                         FileHelper.Unzip(zipFilePath, javaLibDir);
@@ -708,7 +723,7 @@ namespace Qomicex.Core.AOT.Services
             //处理InheritsFrom
             if (!string.IsNullOrEmpty(config.InheritsFrom))
             {
-                var inheritsFromOptions = options with { Version = config.InheritsFrom };
+                var inheritsFromOptions = options with { Version = config.InheritsFrom, JoinServer = null, JoinWorld = null };
 
                 gameList.AddRange(GetGameParams(inheritsFromOptions));
             }
@@ -741,13 +756,27 @@ namespace Qomicex.Core.AOT.Services
 
             if (!string.IsNullOrEmpty(options.JoinServer))
             {
-                gameList.Add("--quickPlayMultiplayer");
-                gameList.Add(options.JoinServer); 
+                if (IsQuickPlaySupported(config))
+                {
+                    gameList.Add("--quickPlayMultiplayer");
+                    gameList.Add(options.JoinServer);
+                }
+                else
+                {
+                    var (server, port) = ParseServerAddress(options.JoinServer);
+                    gameList.Add("--server");
+                    gameList.Add(server);
+                    gameList.Add("--port");
+                    gameList.Add(port.ToString());
+                }
             }
             if (!string.IsNullOrEmpty(NormalizeArg(options.JoinWorld)))
             {
-                gameList.Add("--quickPlaySingleplayer");
-                gameList.Add(NormalizeArg(options.JoinWorld));
+                if (IsQuickPlaySupported(config))
+                {
+                    gameList.Add("--quickPlaySingleplayer");
+                    gameList.Add(NormalizeArg(options.JoinWorld));
+                }
             }
 
 
@@ -761,6 +790,46 @@ namespace Qomicex.Core.AOT.Services
             if (value.Contains(" ") && !value.StartsWith("\"") && !value.EndsWith("\""))
                 value = $"\"{value}\"";
             return value;
+        }
+
+        static bool IsQuickPlaySupported(Config config)
+        {
+            var indexId = config.AssetIndex?.Id;
+            if (string.IsNullOrEmpty(indexId)) return false;
+            if (int.TryParse(indexId, out int num)) return num >= 4;
+            return false;
+        }
+
+        static (string server, int port) ParseServerAddress(string address)
+        {
+            var lastColon = address.LastIndexOf(':');
+            if (lastColon > 0)
+            {
+                var server = address[..lastColon];
+                var portStr = address[(lastColon + 1)..];
+                if (int.TryParse(portStr, out int port)) return (server, port);
+            }
+            return (address, 25565);
+        }
+
+        private static string GetDataDir()
+        {
+            var env = System.Environment.GetEnvironmentVariable("QOMICEX_HOME");
+            if (!string.IsNullOrEmpty(env)) return env;
+
+            var defaultDir = System.IO.Path.Combine(
+                System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
+                "qomicex-launcher");
+
+            var bootstrapFile = System.IO.Path.Combine(defaultDir, ".qomicex-bootstrap");
+            if (System.IO.File.Exists(bootstrapFile))
+            {
+                var customDir = System.IO.File.ReadAllText(bootstrapFile).Trim();
+                if (!string.IsNullOrEmpty(customDir))
+                    return customDir;
+            }
+
+            return defaultDir;
         }
     }
 }

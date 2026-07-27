@@ -20,7 +20,7 @@ internal class NeoForgeInstaller : ForgeInstallerBase, IInstaller
         }
         else
         {
-            BaseUrl = "https://maven.neoforged.net/releases";
+            BaseUrl = "https://maven.neoforged.net/releases|https://libraries.minecraft.net";
         }
         this.gameDir = gameDir;
         this.gameVersion = gameVersion;
@@ -199,7 +199,20 @@ internal class NeoForgeInstaller : ForgeInstallerBase, IInstaller
                 if (!string.IsNullOrEmpty(lib.Url))
                     url = SourceId != 0 ? ResolveUrl(lib.Url) : lib.Url;
                 else
-                    url = $"{BaseUrl}/{lib.Path}";
+                {
+                    if (BaseUrl.Contains("|"))
+                    {
+                        var baseUrls = BaseUrl.Split("|");
+                        foreach (var baseUrl in baseUrls)
+                        {
+                            url = $"{baseUrl}/{lib.Path}";
+                            if (IsFileUrlAvailableAsync(url).Result)
+                                break;
+                        }
+                    }
+                    else
+                        url = $"{BaseUrl}/{lib.Path}";
+                }
 
                 missFiles.Add(new MissFileData(
                     $"{lib.Name}-{lib.Version}.jar",

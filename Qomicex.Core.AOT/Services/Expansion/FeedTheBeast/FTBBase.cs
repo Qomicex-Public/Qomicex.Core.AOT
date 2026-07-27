@@ -25,9 +25,7 @@ internal class FTBBase : IFTBSource
     {
         _http = http;
         _baseUrl = (baseUrl ?? DefaultBaseUrl).TrimEnd('/');
-        _cacheDir = cacheDir ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Qomicex");
+        _cacheDir = cacheDir ?? Path.Combine(GetDataDir(), "QML", "cache", "ftb");
 
         _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
     }
@@ -204,5 +202,25 @@ internal class FTBBase : IFTBSource
         if (bytes >= 1_048_576) return $"{bytes / 1_048_576.0:F2} MB";
         if (bytes >= 1_024) return $"{bytes / 1_024.0:F2} KB";
         return $"{bytes} B";
+    }
+
+    private static string GetDataDir()
+    {
+        var env = Environment.GetEnvironmentVariable("QOMICEX_HOME");
+        if (!string.IsNullOrEmpty(env)) return env;
+
+        var defaultDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "qomicex-launcher");
+
+        var bootstrapFile = Path.Combine(defaultDir, ".qomicex-bootstrap");
+        if (File.Exists(bootstrapFile))
+        {
+            var customDir = File.ReadAllText(bootstrapFile).Trim();
+            if (!string.IsNullOrEmpty(customDir))
+                return customDir;
+        }
+
+        return defaultDir;
     }
 }
