@@ -158,7 +158,6 @@ internal class FTBBase : IFTBSource
 
         return result.Take(limit).ToList();
     }
-
     public async Task<ModpackInfo?> GetPackDetailAsync(int id)
     {
         try
@@ -169,12 +168,31 @@ internal class FTBBase : IFTBSource
         catch { return null; }
     }
 
+    public async Task<List<TargetInfo>?> GetPackGameDetailAsync(int packId, int versionId)
+    {
+        try
+        {
+            var data = GetVersionDetailAsync(packId, versionId).Result;
+            return data.Targets;
+        }
+        catch { return null; }
+    }
+
     public async Task<VersionDetail?> GetVersionDetailAsync(int packId, int versionId)
     {
         try
         {
             var json = await GetDataAsync($"/modpack/{packId}/{versionId}");
             return JsonSerializer.Deserialize(json, JsonCtx.VersionDetail);
+        }
+        catch { return null; }
+    }
+    public async Task<ModsDetail?> GetModDetailAsync(int packId, int versionId)
+    {
+        try
+        {
+            var json = await GetDataAsync($"/modpack/{packId}/{versionId}/mods");
+            return JsonSerializer.Deserialize(json, JsonCtx.ModsDetail);
         }
         catch { return null; }
     }
