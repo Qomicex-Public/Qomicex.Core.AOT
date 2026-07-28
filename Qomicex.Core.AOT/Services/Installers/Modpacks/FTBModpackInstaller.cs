@@ -47,7 +47,9 @@ namespace Qomicex.Core.AOT.Services.Installers.Modpacks
             {
                 if (file.ServerOnly == true)
                     continue;
-                string path = _versionIsolation ? Path.Combine(file.Path.Replace("./", Path.Combine(_gameDir, "versions", versionId)), file.Name) : Path.Combine(file.Path.Replace("./", _gameDir), file.Name);
+                string baseDir = _versionIsolation ? Path.Combine(_gameDir, "versions", versionId) : _gameDir;
+                string relativePath = (file.Path ?? "").Replace("./", "").TrimStart('/');
+                string path = Path.Combine(baseDir, relativePath, file.Name);
                 string url = file.Url;
                 string sha1 = file.Sha1;
                 string name = file.Name;
