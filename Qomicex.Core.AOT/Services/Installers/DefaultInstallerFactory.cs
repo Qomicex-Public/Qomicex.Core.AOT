@@ -36,4 +36,7 @@ internal sealed class DefaultInstallerFactory : IInstallerFactory
 
     public IInstaller CreateModrinthModpack(string gameDir, bool versionIsolation, string modpackFilePath)
         => new ModrinthModpackInstaller(gameDir, versionIsolation, modpackFilePath);
+
+    public IInstaller CreateFtbModpack(string gameDir, bool versionIsolation, HttpClient httpClient, string cfApiKey)
+        => new FTBModpackInstaller(gameDir, versionIsolation, httpClient, cfApiKey);
 }

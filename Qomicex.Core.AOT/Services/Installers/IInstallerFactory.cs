@@ -13,4 +13,5 @@ public interface IInstallerFactory
     IInstaller CreateBabric(int downloadSource, string gameDir);
     IInstaller CreateCurseForgeModpack(string gameDir, bool versionIsolation, string modpackFilePath);
     IInstaller CreateModrinthModpack(string gameDir, bool versionIsolation, string modpackFilePath);
+    IInstaller CreateFtbModpack(string gameDir, bool versionIsolation, HttpClient httpClient, string cfApiKey);
 }
