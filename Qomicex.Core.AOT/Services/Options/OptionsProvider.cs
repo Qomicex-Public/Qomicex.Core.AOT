@@ -197,13 +197,13 @@ public sealed partial class OptionsProvider : IOptionsProvider
 
         foreach (var line in File.ReadAllLines(optionFilePath))
         {
-            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#')
-                || !line.Contains('=', StringComparison.Ordinal))
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#'))
             {
                 continue;
             }
 
-            var parts = line.Split('=', 2);
+            var sep = line.Contains('=', StringComparison.Ordinal) ? '=' : ':';
+            var parts = line.Split(sep, 2);
             if (parts.Length == 2)
             {
                 dict[parts[0].Trim()] = parts[1].Trim();
@@ -305,7 +305,7 @@ public sealed partial class OptionsProvider : IOptionsProvider
         using var writer = new StreamWriter(GetOptionFilePath());
         foreach (var kv in config)
         {
-            writer.WriteLine($"{kv.Key}={kv.Value}");
+            writer.WriteLine($"{kv.Key}:{kv.Value}");
         }
     }
 
